@@ -5,8 +5,11 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+	"fastapi>=0.121.3",
 	"openai>=1.105.0",
 	"pydantic>=2.12.4",
 	"python-dotenv>=1.2.1",
 	"requests>=2.32.5",
+	"transformers>=4.57.1",
+	"uvicorn[standard]>=0.38.0",
 ]
