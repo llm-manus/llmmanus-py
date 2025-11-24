@@ -26,6 +26,14 @@ class Settings(BaseSettings):
     redis_db: int = 0
     redis_password: str | None = None
 
+    # Cos腾讯云对象村粗配置
+    cos_secret_id: str = ""
+    cos_secret_key: str = ""
+    cos_region: str = ""
+    cos_scheme: str = "https"
+    cos_bucket: str = ""
+    cos_domain: str = ""
+
     # 使用pydantic v2的写法来完成环境变量信息的告知
     model_config = SettingsConfigDict(
         env_file=".env",

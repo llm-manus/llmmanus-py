@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
 	"aiomysql>=0.3.2",
+	"cos-python-sdk-v5>=1.9.38",
 	"fastapi>=0.121.3",
 	"greenlet>=3.2.4",
 	"openai>=1.105.0",

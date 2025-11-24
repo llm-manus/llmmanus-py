@@ -12,6 +12,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.infrastructure.logging import setup_logging
+from app.infrastructure.storage.cos import get_cos
 from app.infrastructure.storage.mysql import get_mysql
 from app.infrastructure.storage.redis import get_redis
 from app.interfaces.endpoints.routes import router
@@ -40,21 +41,19 @@ async def lifespan(app: FastAPI):
     # 1.打印日志表示程序开始了
     logger.info("manus正在初始化")
 
-    # 2.初始化Redis
-    redis = get_redis()
-    await redis.init()
-
-    # 3.初始化MySQL客户端
-    mysql = get_mysql()
-    await mysql.init()
+    # 2.初始化Redis/MySQL/Cos客户端
+    await get_redis().init()
+    await get_mysql().init()
+    await get_cos().init()
 
     try:
         # 4.lifespan节点/分界
         yield
     finally:
         # 5.应用关闭时执行
-        await redis.shutdown()
-        await mysql.shutdown()
+        await get_redis().shutdown()
+        await get_mysql().shutdown()
+        await get_cos().shutdown()
         logger.info("manus正在关闭")
 
 
