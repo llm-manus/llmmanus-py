@@ -9,6 +9,7 @@ dependencies = [
 	"cos-python-sdk-v5>=1.9.38",
 	"fastapi>=0.121.3",
 	"greenlet>=3.2.4",
+	"mcp>=1.22.0",
 	"openai>=1.105.0",
 	"pydantic>=2.12.4",
 	"pydantic-settings>=2.12.0",
