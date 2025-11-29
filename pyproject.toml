@@ -8,6 +8,7 @@ dependencies = [
 	"aiomysql>=0.3.2",
 	"cos-python-sdk-v5>=1.9.38",
 	"fastapi>=0.121.3",
+	"filelock>=3.20.0",
 	"greenlet>=3.2.4",
 	"mcp>=1.22.0",
 	"openai>=1.105.0",
