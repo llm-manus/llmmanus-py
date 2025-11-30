@@ -5,12 +5,12 @@
 #Author  :Emcikem
 @File    :app_config.py
 """
-from pydantic import BaseModel, ConfigDict, HttpUrl, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class LLMConfig(BaseModel):
     """语言模型配置"""
-    base_url: HttpUrl = "https://api.deepseek.com"  # 基础URL地址
+    base_url: str = "https://api.deepseek.com"  # 基础URL地址
     api_key: str = ""  # APi秘钥
     model_name: str = "deepseek-reasoner"  # 推理模型让给传递了tools底层会自动切换到deepseek-chat
     temperature: float = Field(default=0.7)  # 温度
