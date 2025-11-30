@@ -78,7 +78,7 @@ class RedisStreamMessageQueue(MessageQueue):
         logger.debug(f"往消息队列[{self._stream_name}]中添加一条消息：{message}")
         return await self._redis.client.xadd(self._stream_name, {"data": message})
 
-    async def get(self, start_id: str = None, block_ms: int = None) -> Optional[Tuple[str, Any]]:
+    async def get(self, start_id: str = None, block_ms: int = None) -> Tuple[str, Any]:
         """从redis-stream获取一条数据"""
         logger.info(f"从消息队列[{self._stream_name}]中获取一条消息：{start_id}")
 
@@ -95,12 +95,12 @@ class RedisStreamMessageQueue(MessageQueue):
 
         # 3.检查messages是否存在
         if not messages:
-            return None
+            return None, None
 
         # 4.从消息列表中区中对呀的消息数据
         stream_messages = messages[0][1]
         if not stream_messages:
-            return None
+            return None, None
 
         # 5.提取id和数据
         message_id, message_data = stream_messages[0]
@@ -109,7 +109,7 @@ class RedisStreamMessageQueue(MessageQueue):
             return message_id, message_data.get('data')
         except Exception as e:
             logger.error(f"从消息队列[{self._stream_name}]获取数据失败：{str(e)}")
-            return None
+            return None, None
 
     async def pop(self) -> Tuple[str, Any]:
         """从消息队列中获取第一天消息并删除"""
@@ -137,7 +137,7 @@ class RedisStreamMessageQueue(MessageQueue):
             return message_id, message_data.get('data')
         except Exception as e:
             logger.error(f"解析消息队列[{self._stream_name}]出错：{str(e)}")
-            return None
+            return None, None
         finally:
             await self._release_lock(lock_key, lock_value)
 
