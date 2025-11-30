@@ -6,8 +6,7 @@
 @File    :task.py
 """
 from abc import ABC, abstractmethod
-from optparse import Option
-from typing import Protocol
+from typing import Protocol, Optional
 
 from app.domain.external.message_queue import MessageQueue
 
@@ -34,11 +33,11 @@ class TaskRunner(ABC):
 class Task(Protocol):
     """定义任务相关的操作接口协议"""
 
-    async def run(self) -> None:
+    async def invoke(self) -> None:
         """运行当前任务"""
         ...
 
-    async def cancel(self) -> None:
+    def cancel(self) -> bool:
         """取消当前任务"""
         ...
 
@@ -63,7 +62,7 @@ class Task(Protocol):
         ...
 
     @classmethod
-    def get(cls, task_id: str) -> Option["Task"]:
+    def get(cls, task_id: str) -> Optional["Task"]:
         """类方法，根据任务id获取对应任务"""
         ...
 
@@ -73,6 +72,6 @@ class Task(Protocol):
         ...
 
     @classmethod
-    def destroy(cls) -> None:
+    async def destroy(cls) -> None:
         """摧毁所有任务实例"""
         ...
