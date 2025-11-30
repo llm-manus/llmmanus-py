@@ -12,7 +12,7 @@ class LLMConfig(BaseModel):
     """语言模型配置"""
     base_url: HttpUrl = "https://api.deepseek.com"  # 基础URL地址
     api_key: str = ""  # APi秘钥
-    model_name: str = "deep-reasoner"  # 推理模型让给传递了tools底层会自动切换到deepseek-chat
+    model_name: str = "deepseek-reasoner"  # 推理模型让给传递了tools底层会自动切换到deepseek-chat
     temperature: float = Field(default=0.7)  # 温度
     max_tokens: int = Field(default=8192, ge=0)  # 最大输出token数
 
