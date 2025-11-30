@@ -73,6 +73,6 @@ class Task(Protocol):
         ...
 
     @classmethod
-    def destory(cls) -> None:
+    def destroy(cls) -> None:
         """摧毁所有任务实例"""
         ...
