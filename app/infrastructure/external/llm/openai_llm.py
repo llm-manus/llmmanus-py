@@ -20,12 +20,13 @@ logger = logging.getLogger(__name__)
 class OpenAILLM(LLM):
     """基于OpenAI SDK/兼容OpenAI格式的LLM调用类"""
 
-    def __init__(self, llm_config: LLMConfig) -> None:
+    def __init__(self, llm_config: LLMConfig, **kwargs) -> None:
         """构造函数，完成异步OpenAI客户端的创建和参数初始化"""
         # 1.初始化异步客户端
         self._client = AsyncOpenAI(
             base_url=str(llm_config.base_url),
-            api_key=llm_config.api_key
+            api_key=llm_config.api_key,
+            **kwargs,
         )
 
         # 2.完成其他参数的存储
