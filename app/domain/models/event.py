@@ -34,7 +34,7 @@ class StepEventStatus(str, Enum):
 class ToolEventStatus(str, Enum):
     """工具事件状态类型枚举"""
     CALLING = "calling"  # 调用中
-    COMPLETED = "completed"  # 调用完毕
+    CALLED = "called"  # 调用完毕
 
 
 class BaseEvent(BaseModel):
@@ -94,7 +94,7 @@ class ToolEvent(BaseEvent):
     # todo:工具事件等待工具模块接入后完善
     type: Literal["tool"] = "tool"
     tool_call_id: str  # 工具调用id
-    too_name: str  # 工具箱/工具集的名字
+    tool_name: str  # 工具箱/工具集的名字
     tool_content: Optional[ToolContent] = None  # 工具扩展内容
     function_name: str  # LLM调用函数/工具名字
     function_args: Dict[str, Any]  # LLM生成的工具调用函数
