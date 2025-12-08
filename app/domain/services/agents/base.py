@@ -16,6 +16,7 @@ from app.domain.external.llm import LLM
 from app.domain.models.app_config import AgentConfig
 from app.domain.models.event import Event, ToolEvent, ToolEventStatus, ErrorEvent
 from app.domain.models.memory import Memory
+from app.domain.models.message import Message
 from app.domain.models.tool_result import ToolResult
 from app.domain.services.tools.base import BaseTool
 
@@ -146,7 +147,35 @@ class BaseAgent(ABC):
         """压缩Agent的记忆"""
         self._memory.compact()
 
-    # todo:Agent的回滚roll_back还未实现
+    async def roll_back(self, message: Message) -> None:
+        """Agent的状态回滚，该函数用于确保Agent的消息列表状态是正确，用于发送新消息、暂停/停止任务、通知用户"""
+        # 1.取出记忆中的最后一条消息，检查释放是工具调用
+        last_message = self._memory.get_last_message()
+        if (
+                not last_message or
+                not last_message.get("tool_calls") or
+                len(last_message.get("tool_calls")) == 0
+        ):
+            return
+
+        # 2.取出消息中的工具调用参数
+        tool_call = last_message.get("tool_calls")[0]
+
+        # 3.提取工具名字、id
+        function_name = tool_call.get("function", {}).get("name")
+        tool_call_id = tool_call.get("id")
+
+        # 4.判断下当前的工具是不是通知用户(message_ask_user)
+        if function_name == "message_ask_user":
+            self._memory.add_message({
+                "role": "tool",
+                "tool_call_id": tool_call_id,
+                "function_name": function_name,
+                "content": message.model_dump_json()
+            })
+        else:
+            # 5.否则直接删除最后一条消息
+            self._memory.roll_back()
 
     async def invoke(self, query: str, format: Optional[str] = None) -> AsyncGenerator[Event, None]:
         """传递消息+响应格式调用层序生成异步迭代内容"""
