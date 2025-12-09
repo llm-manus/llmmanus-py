@@ -26,7 +26,7 @@ class PlanEventStatus(str, Enum):
 
 class StepEventStatus(str, Enum):
     """步骤事件状态"""
-    STATED = "stated"  # 已开始
+    STARTED = "started"  # 已开始
     COMPLETED = "completed"  # 已完成
     FAILED = "failed"  # 已失败
 
@@ -61,7 +61,7 @@ class StepEvent(BaseEvent):
     """子任务/步骤事件"""
     type: Literal["step"] = "step"
     step: Step  # 步骤信息
-    status: StepEventStatus = StepEventStatus.STATED  # 步骤状态
+    status: StepEventStatus = StepEventStatus.STARTED  # 步骤状态
 
 
 class MessageEvent(BaseEvent):
