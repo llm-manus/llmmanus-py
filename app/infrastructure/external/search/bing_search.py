@@ -140,7 +140,7 @@ class BingSearchEngine(SearchEngine):
                             # 21.补全相对路径的url链接或者是缺失的协议
                             if url and not url.startswith("http"):
                                 if url.startswith("//"):
-                                    url = "https" + url
+                                    url = "https:" + url
                                 elif url.startswith("/"):
                                     url = "https://www.bing.com" + url
 
@@ -180,7 +180,7 @@ class BingSearchEngine(SearchEngine):
                         for element in count_elements:
                             # 29.提取dom的文本并获取数字
                             text = element.get_text(strip=True)
-                            match = re.search(r"[\d,]+]\s*results", text)
+                            match = re.search(r"([\d,]+)\s*results", text)
                             if match:
                                 try:
                                     total_results = int(match.group(1).replace(",", ""))
