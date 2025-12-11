@@ -157,7 +157,7 @@ class BingSearchEngine(SearchEngine):
 
                     # 24.提取整个页面的内容并查找`results`对应的文本
                     total_results = 0
-                    result_status = soup.find_all(string=re.compile(r"\d+[,\d+]]\s*results"))
+                    result_status = soup.find_all(string=re.compile(r"\d+[,\d+]\s*results"))
                     if result_status:
                         for stat in result_status:
                             # 25.匹配厨对应的数字分组
