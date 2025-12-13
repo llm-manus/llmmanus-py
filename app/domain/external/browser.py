@@ -64,7 +64,7 @@ class Browser(Protocol):
         """向下滚动浏览器，如果没有传递to_bottom=True则向下滚动一页，否则直接滚动到最底部"""
         ...
 
-    async def screenshot(self, full_page: Optional[bool] = None) -> ToolResult:
+    async def screenshot(self, full_page: Optional[bool] = None) -> bytes:
         """对应当前浏览器页面进行截图，传递full_page=True时会截图整个页面"""
         ...
 
