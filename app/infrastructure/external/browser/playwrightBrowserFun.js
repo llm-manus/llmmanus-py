@@ -196,3 +196,18 @@ const getInteractiveElements = () => {
     return interactiveElements;
 }
 /*getInteractiveElements*/
+
+
+/*injectConsoleLogs*/
+const injectConsoleLogs = () => {
+    // 1.定义变量存储控制台输出日志
+    window.console.logs = [];
+
+    // 2.重写window.console.log函数
+    const originalLog = console.log;
+    console.log = (...args) => {
+        window.console.logs.push(args.join(" "))
+        originalLog.apply(console, args);
+    };
+};
+/*injectConsoleLogs*/

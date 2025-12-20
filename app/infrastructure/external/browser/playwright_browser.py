@@ -16,7 +16,7 @@ from app.domain.external.browser import Browser as BrowserProtocol
 from app.domain.external.llm import LLM
 from app.domain.models.tool_result import ToolResult
 from app.infrastructure.external.browser.playwright_browser_fun import GET_VISIBLE_CONTENT_FUNC, \
-    GET_INTERACTIVE_ELEMENTS_FUNC
+    GET_INTERACTIVE_ELEMENTS_FUNC, INJECT_CONSOLE_LOGS_FUNC
 
 logger = logging.getLogger(__name__)
 
@@ -363,11 +363,13 @@ class PlaywrightBrowser(BrowserProtocol):
                     await element.fill("")
                     await element.type(text)
                 except Exception as e:
-                    return ToolResult(success=False, message=f"输入文本失败：{str(e)}")
+                    # 6.如果填充失败则尝试点击后输入文本，而不是直接清空
+                    await element.click()
+                    await element.type(text)
             except Exception as e:
                 return ToolResult(success=False, message=f"输入文本失败：{str(e)}")
 
-        # 6.判断是否按Enter键
+        # 7.判断是否按Enter键
         if press_enter:
             await self.page.keyboard.press("enter")
 
@@ -450,11 +452,20 @@ class PlaywrightBrowser(BrowserProtocol):
         """传递js代码在当前页面控制台执行"""
         # 1.确保页面存在
         await self._ensure_page()
+
+        # 2.在正式执行代码之前先注入logs
+        try:
+            await self.page.evaluate(INJECT_CONSOLE_LOGS_FUNC)
+        except Exception as e:
+            logger.warning(f"注入window.console.logs失败: {str(e)}")
+
+        # 3.正式执行js脚本
         result = await self.page.evaluate(javascript)
         return ToolResult(success=True, data={"result": result})
 
     async def console_view(self, max_lines: Optional[int] = None) -> ToolResult:
         """根据传递的行数查看控制台的日志"""
+
         # 1.确保页面存在
         await self._ensure_page()
 

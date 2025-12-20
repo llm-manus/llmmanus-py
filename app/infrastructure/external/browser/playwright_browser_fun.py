@@ -201,3 +201,16 @@ GET_INTERACTIVE_ELEMENTS_FUNC = """() => {
     // 28.最终返回所有激活元素数据
     return interactiveElements;
 }"""
+
+# 在执行代码前先执行这段js代码，实现将console.log内存存储到window.console.log中
+INJECT_CONSOLE_LOGS_FUNC = """() => {
+    // 1.定义变量存储控制台输出日志
+    window.console.logs = [];
+    
+    // 2.重写window.console.log函数
+    const originalLog = console.log;
+    console.log = (...args) => {
+        window.console.logs.push(args.join(" "))
+        originalLog.apply(console, args);
+    };
+}"""
