@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
 from app.interfaces.errors.exceptions import AppException
-from app.interfaces.schema.base import Response
+from app.interfaces.schemas.base import Response
 
 logger = logging.getLogger(__name__)
 
