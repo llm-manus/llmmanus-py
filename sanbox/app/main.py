@@ -14,6 +14,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
 from app.interfaces.endpoints.routes import router
+from app.interfaces.errors.exception_handler import register_exception_handler
 
 
 def setup_logging() -> None:
@@ -97,5 +98,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 5.集成路由
+# 5.注册错误并处理
+register_exception_handler(app)
+
+# 6.集成路由
 app.include_router(router, prefix="/api")
