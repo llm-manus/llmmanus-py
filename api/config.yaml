@@ -1,0 +1,12 @@
+llm_config:
+  base_url: https://api.deepseek.com/
+  api_key: sasasasaa
+  model_name: deepseek-reasoner
+  temperature: 10.1
+  max_tokens: 8192
+agent_config:
+  max_iterations: 100
+  max_retries: 3
+  max_search_result: 10
+mcp_config:
+  mcpServers:{}
