@@ -54,7 +54,8 @@ class ShellService:
 
     async def view_shell(self, session_id: str, console: bool = False) -> ShellViewResult:
         """根据传递的会话id+是否输出控制台记录获取Shell命令结果"""
-        pass
+        # 1.判断下传递的会话是否存在
+        logger.debug(f"查看Shell会话内容：{self}")
 
     async def exec_command(
             self,
