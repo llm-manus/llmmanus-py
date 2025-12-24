@@ -15,3 +15,9 @@ class ExecCommandRequest(BaseModel):
     session_id: Optional[str] = Field(default=None, description="目标 Shell 会话的唯一标识符")
     exec_dir: Optional[str] = Field(default=None, description="执行命令的工作目录(必须使用绝对路径)")
     command: str = Field(..., description="要执行的 Shell 命令")
+
+
+class ViewShellRequest(BaseModel):
+    """查看Shell执行内容请求结构体"""
+    session_id: str = Field(..., description="目标 Shell 会话的唯一标识符")
+    console: Optional[bool] = Field(default=None, description="是否返回控制台记录列表")

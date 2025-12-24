@@ -11,10 +11,10 @@ import logging
 import os.path
 import socket
 import uuid
-from typing import Dict
+from typing import Dict, Optional
 
 from app.interfaces.errors.exceptions import BadRequestException, AppException
-from app.models.shell import ShellExecResult, Shell, ConsoleRecord
+from app.models.shell import ShellExecResult, Shell, ConsoleRecord, ShellViewResult, ShellWaitResult
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +48,13 @@ class ShellService:
         session_id = str(uuid.uuid4())
         logger.info(f"创建一个新的Shell会话ID：{session_id}")
         return session_id
+
+    async def wait_for_process(self, session_id: str, seconds: Optional[int] = None) -> ShellWaitResult:
+        pass
+
+    async def view_shell(self, session_id: str, console: bool = False) -> ShellViewResult:
+        """根据传递的会话id+是否输出控制台记录获取Shell命令结果"""
+        pass
 
     async def exec_command(
             self,
