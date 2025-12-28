@@ -12,7 +12,7 @@ import os.path
 import re
 import socket
 import uuid
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 from app.interfaces.errors.exceptions import BadRequestException, AppException, NotFoundException
 from app.models.shell import ShellExecResult, Shell, ConsoleRecord, ShellViewResult, ShellWaitResult
@@ -43,6 +43,10 @@ class ShellService:
         display_dir = self._get_display_path(exec_dir)
         return f"{username}@{hostname}:{display_dir}"
 
+    async def _create_process(self, exec_dir: str, command: str) -> asyncio.subprocess.Process:
+        """根据传递的执行目录+命令创建一个asyncio管理的子进程"""
+        # 1.
+
     @classmethod
     def _remove_ansi_escape_codes(cls, text: str) -> str:
         """从文本中删除ANSI转义字符"""
@@ -55,6 +59,28 @@ class ShellService:
         session_id = str(uuid.uuid4())
         logger.info(f"创建一个新的Shell会话ID：{session_id}")
         return session_id
+
+    def get_console_records(self, session_id: str) -> List[ConsoleRecord]:
+        """从指定会话中获取控制台记录"""
+        # 1.判断下传递的会话是否存在
+        logger.debug(f"正在获取Shell会话的控制台记录：{session_id}")
+        if session_id not in self.active_shells:
+            logger.error(f"Shell会话不存在: {session_id}")
+            raise NotFoundException(f"Shell会话不存在：{session_id}")
+
+        # 2.获取原始的控制台记录列表
+        console_records = self.active_shells[session_id].console_records
+        clean_console_records = []
+
+        # 3.执行循环处理所有记录输出
+        for console_record in console_records:
+            clean_console_records.append(ConsoleRecord(
+                ps1=console_record.ps1,
+                command=console_record.command,
+                output=self._remove_ansi_escape_codes(console_record.output),
+            ))
+
+        return clean_console_records
 
     async def wait_for_process(self, session_id: str, seconds: Optional[int] = None) -> ShellWaitResult:
         pass
