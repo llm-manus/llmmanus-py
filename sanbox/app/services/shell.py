@@ -144,7 +144,7 @@ class ShellService:
 
         # 2.获取会话和子进程
         shell = self.active_shells[session_id]
-        process = shell
+        process = shell.process
 
         try:
             # 3.判断是否设置seconds
@@ -270,10 +270,10 @@ class ShellService:
             try:
                 # 13.尝试等待子进程执行(最多等待5s)
                 logger.debug(f"正在等待会话中的进程完成：{session_id}")
-                wait_result = await self.wait_for_process(session_id, second=5)
+                wait_result = await self.wait_for_process(session_id, seconds=5)
 
                 # 14.判断返回代码是否非空（已结束）则同步返回执行结果
-                if wait_result.returncode is None:
+                if wait_result.returncode is not None:
                     # 15.记录日志并查看结果
                     logger.debug(f"Shell会话进程已结束，代码：{wait_result.returncode}")
                     view_result = await self.view_shell(session_id)
