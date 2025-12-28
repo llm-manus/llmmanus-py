@@ -21,3 +21,9 @@ class ViewShellRequest(BaseModel):
     """查看Shell执行内容请求结构体"""
     session_id: str = Field(..., description="目标 Shell 会话的唯一标识符")
     console: Optional[bool] = Field(default=None, description="是否返回控制台记录列表")
+
+
+class WaitForProcessRequest(BaseModel):
+    """等待Shell命令执行请求结构体"""
+    session_id: str = Field(..., description="目标 Shell 会话的唯一标识符")
+    seconds: Optional[int] = Field(default=None, description="等待时间，单位为秒")

@@ -12,9 +12,9 @@ from fastapi.params import Depends
 
 from app.interfaces.errors.exceptions import BadRequestException
 from app.interfaces.schemas.base import Response
-from app.interfaces.schemas.shell import ExecCommandRequest, ViewShellRequest
+from app.interfaces.schemas.shell import ExecCommandRequest, ViewShellRequest, WaitForProcessRequest
 from app.interfaces.service_dependencies import get_shell_service
-from app.models.shell import ShellExecResult, ShellViewResult
+from app.models.shell import ShellExecResult, ShellViewResult, ShellWaitResult
 from app.services.shell import ShellService
 
 router = APIRouter(prefix="/shell", tags=["Shell模块"])
@@ -64,3 +64,20 @@ async def view_shell(
     result = await shell_service.view_shell(request.session_id, request.console)
 
     return Response.success(data=result)
+
+
+@router.post(
+    path="/wait-for-process",
+    response_model=Response[ShellExecResult],
+)
+async def wait_for_process(
+        request: WaitForProcessRequest,
+        shell_service: ShellService = Depends(get_shell_service),
+) -> Response[ShellWaitResult]:
+    """传递对话id+描述执行等待并获取等待结果"""
+    result = await shell_service.wait_for_process(request.session_id, request.seconds)
+
+    return Response.success(
+        msg=f"进程结束，返回状态码(returncode): {result.returncode}",
+        data=result
+    )
