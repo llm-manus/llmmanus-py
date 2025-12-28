@@ -6,6 +6,7 @@
 @File    :shell.py
 """
 import asyncio
+import codecs
 import getpass
 import logging
 import os.path
@@ -71,6 +72,70 @@ class ShellService:
             stdin=asyncio.subprocess.PIPE,  # 创建管道以运行标准输入
             limit=1024 * 1024,  # 设置缓冲器大小并限制为1MB
         )
+
+    async def _start_output_reader(self, session_id: str, process: asyncio.subprocess.Process) -> None:
+        """启动协程以连续读取进程输出并将其存储到会话中"""
+        # 1.动态确定系统编码
+        logger.debug(f"正在启动会话输出器: {session_id}")
+        if sys.platform == "win32":
+            encoding = "gb18030"  # gb18030比gbk支持的生僻词更多，且兼容gbk
+        else:
+            encoding = "utf-8"
+
+        # 2.创建增量编码器（解决字符被切断的问题）
+        decoder = codecs.getincrementaldecoder(encoding)(errors="replace")
+        shell = self.active_shells.get(session_id)
+
+        while True:
+            # 3.判断子进程是否有标准输出管道
+            if process.stdout:
+                try:
+                    # 4.读取缓存区的数据，假设一次读取4096
+                    buffer = await process.stdout.read(4096)
+                    if not buffer:
+                        break
+
+                    # 5.使用编码器进行编码，同时设置final=False标识未结束
+                    output = decoder.decode(buffer, final=False)
+
+                    # 6.判断会话是否存在
+                    if shell:
+                        # 7.改下会话输出和控制台记录
+                        shell.output += output
+                        if shell.console_records:
+                            shell.console_records[-1].output += output
+                except Exception as e:
+                    logger.error(f"读取进程输出时错误：{str(e)}")
+                    break
+            else:
+                break
+
+        logger.debug(f"会话 {session_id} 的输出读取器已完成")
+
+    async def wait_for_process(self, session_id: str, seconds: Optional[int] = None) -> ShellWaitResult:
+        """传递会话id+时间，等待子进程结束"""
+        # 1.判断下传递的会话是否存在
+        logger.debug(f"正在Shell会话中等待进程：{session_id}，超时：{seconds}s")
+        if session_id not in self.active_shells:
+            logger.error(f"Shell会话不存在：{session_id}")
+            raise NotFoundException(f"Shell会话不存在：{session_id}")
+
+        # 2.获取会话和子进程
+        shell = self.active_shells[session_id]
+        process = shell
+
+        try:
+            # 3.判断是否设置seconds
+            seconds = 60 if seconds is None or seconds <= 0 else seconds
+            await asyncio.wait_for(process.wait(), timeout=seconds)
+        except asyncio.TimeoutError:
+            # 记录日志并抛出BadRequest异常
+            logger.warning(f"Shell会话异常等待超时：{seconds}s")
+            raise BadRequestException(f"Shell会话进程等待超时：{seconds}s")
+        except Exception as e:
+            # 记录日志并抛出AppException
+            logger.error(f"Shell会话进程等待过程出错：{str(e)}")
+            raise AppException(f"Shell会话进程等待过程出错：{str(e)}")
 
     @classmethod
     def _remove_ansi_escape_codes(cls, text: str) -> str:
