@@ -10,7 +10,9 @@ import getpass
 import logging
 import os.path
 import re
+import shutil
 import socket
+import sys
 import uuid
 from typing import Dict, Optional, List
 
@@ -45,7 +47,30 @@ class ShellService:
 
     async def _create_process(self, exec_dir: str, command: str) -> asyncio.subprocess.Process:
         """根据传递的执行目录+命令创建一个asyncio管理的子进程"""
-        # 1.
+        # 1.根据不同的系统选择不同的解释器
+        logger.debug(f"在目录 {exec_dir} 下使用命令 {command} 创建一个子进程")
+        shell_exec = None
+        if sys.platform != "win32":
+            if os.path.exists("/bin/bash"):
+                shell_exec = "/bin/bash"
+            elif os.path.exists("/bin/zsh"):
+                shell_exec = "/bin/zsh"
+        elif sys.platform == "win32":
+            # 2.优选查找powershell是否存在
+            shell_exec = shutil.which("powershell")
+            if not shell_exec:
+                shell_exec = shutil.which("cmd")
+
+        # 3.创建一个系统级的子进程来执行shell命令
+        return await asyncio.create_subprocess_shell(
+            command,  # 要执行的命令
+            executable=shell_exec,  # 指定解析器
+            cwd=exec_dir,  #
+            stdout=asyncio.subprocess.PIPE,  # 创建管道以捕获标准输出
+            stderr=asyncio.subprocess.STDOUT,  # 将标准错误重定向到标准输出流
+            stdin=asyncio.subprocess.PIPE,  # 创建管道以运行标准输入
+            limit=1024 * 1024,  # 设置缓冲器大小并限制为1MB
+        )
 
     @classmethod
     def _remove_ansi_escape_codes(cls, text: str) -> str:
