@@ -128,6 +128,10 @@ class ShellService:
             # 3.判断是否设置seconds
             seconds = 60 if seconds is None or seconds <= 0 else seconds
             await asyncio.wait_for(process.wait(), timeout=seconds)
+
+            # 4.记录日志并返回结果
+            logger.info(f"进程已完成，返回代码为：{process.returncode}")
+            return ShellWaitResult(returncode=process.returncode)
         except asyncio.TimeoutError:
             # 记录日志并抛出BadRequest异常
             logger.warning(f"Shell会话异常等待超时：{seconds}s")
