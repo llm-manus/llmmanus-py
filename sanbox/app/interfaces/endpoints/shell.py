@@ -61,6 +61,6 @@ async def view_shell(
         raise BadRequestException("Shell会话ID为空，请核实后重试")
 
     # 2.调页服务获取命令执行结果
-    result = await shell_service.view_shell(request, request.session_id)
+    result = await shell_service.view_shell(request.session_id, request.console)
 
     return Response.success(data=result)
