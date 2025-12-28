@@ -112,6 +112,28 @@ class ShellService:
 
         logger.debug(f"会话 {session_id} 的输出读取器已完成")
 
+    def get_console_records(self, session_id: str) -> List[ConsoleRecord]:
+        """从指定会话中获取控制台记录"""
+        # 1.判断下传递的会话是否存在
+        logger.debug(f"正在获取Shell会话的控制台记录：{session_id}")
+        if session_id not in self.active_shells:
+            logger.error(f"Shell会话不存在: {session_id}")
+            raise NotFoundException(f"Shell会话不存在：{session_id}")
+
+        # 2.获取原始的控制台记录列表
+        console_records = self.active_shells[session_id].console_records
+        clean_console_records = []
+
+        # 3.执行循环处理所有记录输出
+        for console_record in console_records:
+            clean_console_records.append(ConsoleRecord(
+                ps1=console_record.ps1,
+                command=console_record.command,
+                output=self._remove_ansi_escape_codes(console_record.output),
+            ))
+
+        return clean_console_records
+
     async def wait_for_process(self, session_id: str, seconds: Optional[int] = None) -> ShellWaitResult:
         """传递会话id+时间，等待子进程结束"""
         # 1.判断下传递的会话是否存在
@@ -153,31 +175,6 @@ class ShellService:
         session_id = str(uuid.uuid4())
         logger.info(f"创建一个新的Shell会话ID：{session_id}")
         return session_id
-
-    def get_console_records(self, session_id: str) -> List[ConsoleRecord]:
-        """从指定会话中获取控制台记录"""
-        # 1.判断下传递的会话是否存在
-        logger.debug(f"正在获取Shell会话的控制台记录：{session_id}")
-        if session_id not in self.active_shells:
-            logger.error(f"Shell会话不存在: {session_id}")
-            raise NotFoundException(f"Shell会话不存在：{session_id}")
-
-        # 2.获取原始的控制台记录列表
-        console_records = self.active_shells[session_id].console_records
-        clean_console_records = []
-
-        # 3.执行循环处理所有记录输出
-        for console_record in console_records:
-            clean_console_records.append(ConsoleRecord(
-                ps1=console_record.ps1,
-                command=console_record.command,
-                output=self._remove_ansi_escape_codes(console_record.output),
-            ))
-
-        return clean_console_records
-
-    async def wait_for_process(self, session_id: str, seconds: Optional[int] = None) -> ShellWaitResult:
-        pass
 
     async def view_shell(self, session_id: str, console: bool = False) -> ShellViewResult:
         """根据传递的会话id+是否输出控制台记录获取Shell命令结果"""
