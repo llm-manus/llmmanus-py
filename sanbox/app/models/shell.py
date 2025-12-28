@@ -50,3 +50,14 @@ class ShellExecResult(BaseModel):
     status: str = Field(..., description="命令执行状态")
     returncode: Optional[int] = Field(default=None, description="进程返回代码，只有进程结束时才有值")
     output: Optional[str] = Field(default=None, description="进程执行结果，只有进程结束时才有值")
+
+
+class ShellWriteResult(BaseModel):
+    """Shell命令写入结果模型"""
+    status: str = Field(..., description="写入状态")
+
+
+class ShellKillResult(BaseModel):
+    """Shell命令关闭结果"""
+    status: str = Field(..., description="进程状态")
+    returncode: int = Field(..., description="进程返回状态")

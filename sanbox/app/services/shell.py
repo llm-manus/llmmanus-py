@@ -18,7 +18,8 @@ import uuid
 from typing import Dict, Optional, List
 
 from app.interfaces.errors.exceptions import BadRequestException, AppException, NotFoundException
-from app.models.shell import ShellExecResult, Shell, ConsoleRecord, ShellViewResult, ShellWaitResult
+from app.models.shell import ShellExecResult, Shell, ConsoleRecord, ShellViewResult, ShellWaitResult, ShellWriteResult, \
+    ShellKillResult
 
 logger = logging.getLogger(__name__)
 
@@ -307,3 +308,18 @@ class ShellService:
                 msg=f"命令执行失败：{str(e)}",
                 data={"session_id": session_id, "command": command},
             )
+
+    async def write_to_process(
+            self,
+            session_id: str,
+            input_text: str,
+            press_enter: bool
+    ) -> ShellWriteResult:
+        """根据传递的数据向指定子进程写入数据"""
+        pass
+
+    async def kill_process(
+            self,
+            session_id: str
+    ) -> ShellKillResult:
+        pass
