@@ -182,4 +182,40 @@ class FileTool(BaseTool):
             sudo=sudo,
         )
 
+    @tool(
+        name="file_find_by_name",
+        description="在指定目录中根据名称模式查找文件。用于定位具有特定命名模式的文件。",
+        parameters={
+            "dir_path": {
+                "type": "string",
+                "description": "要搜索的目录的绝对路径",
+            },
+            "glob_pattern": {
+                "type": "string",
+                "description": "使用 glob 语法通配符的文件名模式",
+            }
+        },
+        required=["dir_path", "glob_pattern"],
+    )
+    async def file_find_by_name(
+            self, dir_path:
+            str, glob_pattern: str
+    ) -> ToolResult:
+        return await self.sandbox.file_find(
+            dir_path=dir_path,
+            glob_pattern=glob_pattern,
+        )
 
+    @tool(
+        name="file_list",
+        description="列出指定目录下的文件列表信息",
+        parameters={
+            "dir_path": {
+                "type": "string",
+                "description": "要列出文件列表的目录的绝对路径",
+            },
+        },
+        required=["dir_path"],
+    )
+    async def file_list(self, dir_path: str) -> ToolResult:
+        return await self.sandbox.file_list(dir_path=dir_path)
