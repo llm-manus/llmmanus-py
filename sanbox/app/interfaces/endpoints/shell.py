@@ -105,7 +105,7 @@ async def write_to_process(
     # 2.调用服务向子进程写入数据
     result = await shell_service.write_to_process(
         session_id=request.session_id,
-        input=request.input,
+        input_text=request.input_text,
         press_enter=request.press_enter,
     )
 

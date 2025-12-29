@@ -8,6 +8,7 @@
 import asyncio
 import codecs
 import getpass
+import locale
 import logging
 import os.path
 import re
@@ -316,10 +317,95 @@ class ShellService:
             press_enter: bool
     ) -> ShellWriteResult:
         """根据传递的数据向指定子进程写入数据"""
-        pass
+        # 1.判断下传递的会话是否存在
+        logger.debug(f"写入Shell会话中的子进程：{session_id}，是否按下回车键：{press_enter}")
+        if session_id not in self.active_shells:
+            logger.error(f"Shell会话不存在: {session_id}")
+            raise NotFoundException(f"Shell会话不存在：{session_id}")
 
-    async def kill_process(
-            self,
-            session_id: str
-    ) -> ShellKillResult:
-        pass
+        # 2.获取会话和子进程
+        shell = self.active_shells[session_id]
+        process = shell.process
+
+        try:
+            # 3.检查子进程是否结束
+            if process.returncode is not None:
+                logger.error(f"子进程已结束，无法写入输入：{session_id}")
+                raise BadRequestException("子进程已结束，无法写入输入")
+
+            # 4.确认系统编码
+            if sys.platform == "win32":
+                encoding = locale.getpreferredencoding()
+                line_ending = "\r\n"
+            else:
+                encoding = "utf-8"
+                line_ending = "\n"
+
+            # 5.准备要发送的内容
+            text_to_send = input_text
+            if press_enter:
+                text_to_send += line_ending
+
+            # 6.将字符串编码为字节流(发送给进程使用)
+            input_data = text_to_send.encode(encoding)
+
+            # 7.记录日志/输出(直接使用原始字符串，不从input_data编码，避免编码不统一的情况)
+            log_text = input_text + ("\n" if press_enter else "")
+            shell.output += log_text
+            if shell.console_records:
+                shell.console_records[-1].output += log_text
+
+            # 8.向子进程写入数据
+            process.stdin.write(input_data)
+            await process.stdin.drain()
+
+            # 9.记录日志并返回写入结果
+            logger.info("成功向子进程写入数据")
+            return ShellWriteResult(status="success")
+        except UnicodeDecodeError as e:
+            # 10.捕获编码异常
+            logger.error(f"编码错误：{str(e)}")
+            raise AppException(f"编码错误：{str(e)}")
+        except Exception as e:
+            # 11.捕获通用异常
+            logger.error(f"向子进程写入数据出错：{str(e)}")
+            raise AppException(f"向子进程写入数据出错：{str(e)}")
+
+    async def kill_process(self, session_id: str) -> ShellKillResult:
+        """根据传递的Shell会话id关闭对应进程"""
+        # 1.判断下传递的会话是否存在
+        logger.debug(f"正在终止会话中的进程：{session_id}")
+        if session_id not in self.active_shells:
+            logger.error(f"Shell会话不存在: {session_id}")
+            raise NotFoundException(f"Shell会话不存在：{session_id}")
+
+        # 2.获取会话和子进程
+        shell = self.active_shells[session_id]
+        process = shell.process
+
+        try:
+            # 3.检查子进程是否还在运行
+            if process.returncode is None:
+                # 4.记录日志并尝试先优雅关闭
+                logger.info(f"尝试优雅终止进程：{session_id}")
+                process.terminate()
+
+                try:
+                    # 5.等待3秒的事件
+                    await asyncio.wait_for(process.wait(), timeout=3)
+                except asyncio.TimeoutError as e:
+                    # 优雅关闭失败，则强制关闭
+                    logger.warning(f"尝试强制关闭进程：{session_id}")
+                    process.kill()
+
+                # 7.记录日志并返回关闭结果
+                logger.info(f"进程已终止，返回代码为：{process.returncode}")
+                return ShellKillResult(status="terminated", returncode=process.returncode)
+            else:
+                # 进程已结束无需重复关闭
+                logger.info(f"进程已终止，返回代码：{process.returncode}")
+                return ShellKillResult(status="already_terminated", returncode=process.returncode)
+        except Exception as e:
+            # 9.记录日志并抛出异常
+            logger.error(f"关闭进程失败：{str(e)}", exc_info=True)
+            raise AppException(f"关闭进程失败：{str(e)}")
