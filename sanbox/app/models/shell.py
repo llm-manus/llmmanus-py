@@ -36,14 +36,14 @@ class ShellWaitResult(BaseModel):
     returncode: int = Field(..., description="子进程返回代码")
 
 
-class ShellViewResult(BaseModel):
+class ShellReadResult(BaseModel):
     """Shell命令结果模型"""
     session_id: str = Field(..., description="SHell会话id")
     output: str = Field(..., description="Shell会话输出内容")
     console_records: List[ConsoleRecord] = Field(default_factory=list, description="控制台记录")
 
 
-class ShellExecResult(BaseModel):
+class ShellExecuteResult(BaseModel):
     """Shell命令执行结果"""
     session_id: str = Field(..., description="Shell会话id")
     command: str = Field(..., description="执行命令")

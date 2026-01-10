@@ -16,7 +16,8 @@ import uuid
 from typing import Dict, Optional, List
 
 from app.interfaces.errors.exceptions import BadRequestException, AppException, NotFoundException
-from app.models.shell import ShellExecResult, Shell, ConsoleRecord, ShellViewResult, ShellWaitResult, ShellWriteResult, \
+from app.models.shell import ShellExecuteResult, Shell, ConsoleRecord, ShellReadResult, ShellWaitResult, \
+    ShellWriteResult, \
     ShellKillResult
 
 logger = logging.getLogger(__name__)
@@ -166,7 +167,7 @@ class ShellService:
         logger.info(f"创建一个新的Shell会话ID：{session_id}")
         return session_id
 
-    async def view_shell(self, session_id: str, console: bool = False) -> ShellViewResult:
+    async def view_shell(self, session_id: str, console: bool = False) -> ShellReadResult:
         """根据传递的会话id+是否输出控制台记录获取Shell命令结果"""
         # 1.判断下传递的会话是否存在
         logger.debug(f"查看Shell会话内容：{self}")
@@ -187,7 +188,7 @@ class ShellService:
         else:
             console_records = []
 
-        return ShellViewResult(
+        return ShellReadResult(
             session_id=session_id,
             output=clean_output,
             console_records=console_records,
@@ -198,7 +199,7 @@ class ShellService:
             session_id: str,
             exec_dir: str,
             command: str,
-    ) -> ShellExecResult:
+    ) -> ShellExecuteResult:
         """传递会话id+执行目录+命令在沙箱中执行后返回"""
         # 1.记录日志并判断执行目录是否存在
         logger.info(f"正在会话：{session_id} 中执行命令：{command}")
@@ -268,7 +269,7 @@ class ShellService:
                     logger.debug(f"Shell会话进程已结束，代码：{wait_result.returncode}")
                     view_result = await self.view_shell(session_id)
 
-                    return ShellExecResult(
+                    return ShellExecuteResult(
                         session_id=session_id,
                         command=command,
                         status="completed",
@@ -284,7 +285,7 @@ class ShellService:
                 logger.warning(f"等待进程时出现异常：{str(e)}")
                 pass
 
-            return ShellExecResult(
+            return ShellExecuteResult(
                 session_id=session_id,
                 command=command,
                 status="running",

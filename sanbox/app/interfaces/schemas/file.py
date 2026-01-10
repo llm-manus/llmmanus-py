@@ -10,7 +10,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
-class ReadFileRequest(BaseModel):
+class FileReadRequest(BaseModel):
     """读取文件请求结构体"""
     filepath: str = Field(..., description="要读取文件的绝对路径")
     start_line: Optional[int] = Field(default=None, description="(可选)读取的起始行，索引从0开始")
@@ -19,7 +19,7 @@ class ReadFileRequest(BaseModel):
     max_length: Optional[int] = Field(default=10000, description="(可选)要返回的内容的最大长度")
 
 
-class WriteFileRequest(BaseModel):
+class FileWriteRequest(BaseModel):
     """写入文件请求结构体"""
     filepath: str = Field(..., description="要读取文件的绝对路径")
     content: str = Field(..., description="要写入的文本内容")

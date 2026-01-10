@@ -15,7 +15,7 @@ from app.interfaces.schemas.base import Response
 from app.interfaces.schemas.shell import ExecCommandRequest, ViewShellRequest, WaitForProcessRequest, \
     WriteToProcessRequest, KillProcessRequest
 from app.interfaces.service_dependencies import get_shell_service
-from app.models.shell import ShellExecResult, ShellViewResult, ShellWaitResult, ShellWriteResult, ShellKillResult
+from app.models.shell import ShellExecuteResult, ShellReadResult, ShellWaitResult, ShellWriteResult, ShellKillResult
 from app.services.shell import ShellService
 
 router = APIRouter(prefix="/shell", tags=["Shell模块"])
@@ -23,12 +23,12 @@ router = APIRouter(prefix="/shell", tags=["Shell模块"])
 
 @router.post(
     path="/exec-command",
-    response_model=Response[ShellExecResult],
+    response_model=Response[ShellExecuteResult],
 )
 async def exec_command(
         request: ExecCommandRequest,
         shell_service: ShellService = Depends(get_shell_service),
-) -> Response[ShellExecResult]:
+) -> Response[ShellExecuteResult]:
     """在指定的Shell会话中运行命令"""
     # 1.判断下是否传递了session_id，如果不存在则新建一个session_id
     if not request.session_id or request.session_id == "":
@@ -50,12 +50,12 @@ async def exec_command(
 
 @router.post(
     path="/view-shell",
-    response_model=Response[ShellViewResult],
+    response_model=Response[ShellReadResult],
 )
 async def view_shell(
         request: ViewShellRequest,
         shell_service: ShellService = Depends(get_shell_service),
-) -> Response[ShellViewResult]:
+) -> Response[ShellReadResult]:
     """根据传递的会话id+是否返回控制台标识获取Shell命令执行结果"""
     # 1.判断下Shell会话id是否存在
     if not request.session_id or request.session_id == "":
@@ -69,7 +69,7 @@ async def view_shell(
 
 @router.post(
     path="/wait-for-process",
-    response_model=Response[ShellExecResult],
+    response_model=Response[ShellExecuteResult],
 )
 async def wait_for_process(
         request: WaitForProcessRequest,

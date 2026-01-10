@@ -8,7 +8,7 @@
 from fastapi import APIRouter, Depends
 
 from app.interfaces.schemas.base import Response
-from app.interfaces.schemas.file import ReadFileRequest, WriteFileRequest
+from app.interfaces.schemas.file import FileReadRequest, FileWriteRequest
 from app.interfaces.service_dependencies import get_file_service
 from app.models.file import FileReadResult, FileWriteResult
 from app.services.file import FileService
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/file", tags=["File模块"])
     response_model=Response[FileReadResult],
 )
 async def read_file(
-        request: ReadFileRequest,
+        request: FileReadRequest,
         file_service: FileService = Depends(get_file_service),
 ) -> Response[FileReadResult]:
     """根据传递的数据读取沙箱中的文件内容"""
@@ -44,7 +44,7 @@ async def read_file(
     response_model=Response[FileWriteResult],
 )
 async def write_file(
-        request: WriteFileRequest,
+        request: FileWriteRequest,
         file_service: FileService = Depends(get_file_service),
 ) -> Response[FileWriteResult]:
     """根据传递的数据向指定文件写入内容"""
