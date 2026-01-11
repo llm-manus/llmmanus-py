@@ -27,3 +27,34 @@ class FileWriteRequest(BaseModel):
     leading_newline: Optional[bool] = Field(default=False, description="(可选)是否在内容开头添加前置空行")
     trailing_newline: Optional[bool] = Field(default=False, description="(可选)是否在内容结尾添加前置空行")
     sudo: Optional[bool] = Field(default=False, description="(可选)是否使用sudo权限")
+
+
+class FileReplaceRequest(BaseModel):
+    """查找替换文件内容请求结构体"""
+    filepath: str = Field(..., description="要替换内容的文件绝对路径")
+    old_str: str = Field(..., description="要替换的原始字符串")
+    now_str: str = Field(..., description="要替换的新字符串")
+    sudo: Optional[bool] = Field(default=False, description="(可选)是否使用sudo权限")
+
+
+class FileSearchRequest(BaseModel):
+    """文件内容查找请求结构体"""
+    filepath: str = Field(..., description="要查找内容的文件绝对路径")
+    regex: str = Field(..., description="搜索正则表达式")
+    sudo: Optional[bool] = Field(default=False, description="(可选)是否使用sudo权限")
+
+
+class FileFindRequest(BaseModel):
+    """文件查找请求结构体"""
+    filepath: str = Field(..., description="搜索的目录绝对路径")
+    glob_pattern: str = Field(..., description="文件名模型(glob语法)")
+
+
+class FileCheckRequest(BaseModel):
+    """检查文件是否存在请求结构体"""
+    filepath: str = Field(..., description="要检查是否存在的文件绝对路径")
+
+
+class FileDeleteRequest(BaseModel):
+    """删除文件请求结构体"""
+    filepath: str = Field(..., description="要删除的文件绝对路径")
