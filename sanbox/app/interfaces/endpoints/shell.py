@@ -12,8 +12,8 @@ from fastapi.params import Depends
 
 from app.interfaces.errors.exceptions import BadRequestException
 from app.interfaces.schemas.base import Response
-from app.interfaces.schemas.shell import ExecCommandRequest, ViewShellRequest, WaitForProcessRequest, \
-    WriteToProcessRequest, KillProcessRequest
+from app.interfaces.schemas.shell import ShellExecuteRequest, ShellReadRequest, ShellWaitRequest, \
+    ShellWriteRequest, ShellKillRequest
 from app.interfaces.service_dependencies import get_shell_service
 from app.models.shell import ShellExecuteResult, ShellReadResult, ShellWaitResult, ShellWriteResult, ShellKillResult
 from app.services.shell import ShellService
@@ -26,7 +26,7 @@ router = APIRouter(prefix="/shell", tags=["Shell模块"])
     response_model=Response[ShellExecuteResult],
 )
 async def exec_command(
-        request: ExecCommandRequest,
+        request: ShellExecuteRequest,
         shell_service: ShellService = Depends(get_shell_service),
 ) -> Response[ShellExecuteResult]:
     """在指定的Shell会话中运行命令"""
@@ -53,7 +53,7 @@ async def exec_command(
     response_model=Response[ShellReadResult],
 )
 async def view_shell(
-        request: ViewShellRequest,
+        request: ShellReadRequest,
         shell_service: ShellService = Depends(get_shell_service),
 ) -> Response[ShellReadResult]:
     """根据传递的会话id+是否返回控制台标识获取Shell命令执行结果"""
@@ -72,7 +72,7 @@ async def view_shell(
     response_model=Response[ShellExecuteResult],
 )
 async def wait_for_process(
-        request: WaitForProcessRequest,
+        request: ShellWaitRequest,
         shell_service: ShellService = Depends(get_shell_service),
 ) -> Response[ShellWaitResult]:
     """传递对话id+描述执行等待并获取等待结果"""
@@ -94,7 +94,7 @@ async def wait_for_process(
     response_model=Response[ShellWaitResult],
 )
 async def write_to_process(
-        request: WriteToProcessRequest,
+        request: ShellWriteRequest,
         shell_service: ShellService = Depends(get_shell_service),
 ) -> Response[ShellWriteResult]:
     """根据传递的会话+写入内容+按下回车标识向指定子进程写入数据"""
@@ -120,7 +120,7 @@ async def write_to_process(
     response_model=Response[ShellKillResult],
 )
 async def kill_process(
-        request: KillProcessRequest,
+        request: ShellKillRequest,
         shell_service: ShellService = Depends(get_shell_service),
 ) -> Response[ShellKillResult]:
     """传递Shell会话id关闭指定对话"""
