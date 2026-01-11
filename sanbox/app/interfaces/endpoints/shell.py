@@ -49,10 +49,10 @@ async def exec_command(
 
 
 @router.post(
-    path="/view-shell",
+    path="/read-shell-output",
     response_model=Response[ShellReadResult],
 )
-async def view_shell(
+async def read_shell_output(
         request: ShellReadRequest,
         shell_service: ShellService = Depends(get_shell_service),
 ) -> Response[ShellReadResult]:
@@ -62,16 +62,16 @@ async def view_shell(
         raise BadRequestException("Shell会话ID为空，请核实后重试")
 
     # 2.调页服务获取命令执行结果
-    result = await shell_service.view_shell(request.session_id, request.console)
+    result = await shell_service.read_shell_output(request.session_id, request.console)
 
     return Response.success(data=result)
 
 
 @router.post(
-    path="/wait-for-process",
+    path="/wait-process",
     response_model=Response[ShellExecuteResult],
 )
-async def wait_for_process(
+async def wait_process(
         request: ShellWaitRequest,
         shell_service: ShellService = Depends(get_shell_service),
 ) -> Response[ShellWaitResult]:
@@ -81,7 +81,7 @@ async def wait_for_process(
         raise BadRequestException("Shell会话ID为空，请核实后重试")
 
     # 2.调用服务等待子进程
-    result = await shell_service.wait_for_process(request.session_id, request.seconds)
+    result = await shell_service.wait_process(request.session_id, request.seconds)
 
     return Response.success(
         msg=f"进程结束，返回状态码(returncode): {result.returncode}",
@@ -90,10 +90,10 @@ async def wait_for_process(
 
 
 @router.post(
-    path="/write-to-process",
+    path="/write-shell-input",
     response_model=Response[ShellWaitResult],
 )
-async def write_to_process(
+async def write_shell_input(
         request: ShellWriteRequest,
         shell_service: ShellService = Depends(get_shell_service),
 ) -> Response[ShellWriteResult]:
@@ -103,7 +103,7 @@ async def write_to_process(
         raise BadRequestException("Shell会话ID为空，请核实后重试")
 
     # 2.调用服务向子进程写入数据
-    result = await shell_service.write_to_process(
+    result = await shell_service.write_shell_input(
         session_id=request.session_id,
         input_text=request.input_text,
         press_enter=request.press_enter,

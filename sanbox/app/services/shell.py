@@ -125,7 +125,7 @@ class ShellService:
 
         return clean_console_records
 
-    async def wait_for_process(self, session_id: str, seconds: Optional[int] = None) -> ShellWaitResult:
+    async def wait_process(self, session_id: str, seconds: Optional[int] = None) -> ShellWaitResult:
         """传递会话id+时间，等待子进程结束"""
         # 1.判断下传递的会话是否存在
         logger.debug(f"正在Shell会话中等待进程：{session_id}，超时：{seconds}s")
@@ -167,7 +167,7 @@ class ShellService:
         logger.info(f"创建一个新的Shell会话ID：{session_id}")
         return session_id
 
-    async def view_shell(self, session_id: str, console: bool = False) -> ShellReadResult:
+    async def read_shell_output(self, session_id: str, console: bool = False) -> ShellReadResult:
         """根据传递的会话id+是否输出控制台记录获取Shell命令结果"""
         # 1.判断下传递的会话是否存在
         logger.debug(f"查看Shell会话内容：{self}")
@@ -261,13 +261,13 @@ class ShellService:
             try:
                 # 13.尝试等待子进程执行(最多等待5s)
                 logger.debug(f"正在等待会话中的进程完成：{session_id}")
-                wait_result = await self.wait_for_process(session_id, seconds=5)
+                wait_result = await self.wait_process(session_id, seconds=5)
 
                 # 14.判断返回代码是否非空（已结束）则同步返回执行结果
                 if wait_result.returncode is not None:
                     # 15.记录日志并查看结果
                     logger.debug(f"Shell会话进程已结束，代码：{wait_result.returncode}")
-                    view_result = await self.view_shell(session_id)
+                    view_result = await self.read_shell_output(session_id)
 
                     return ShellExecuteResult(
                         session_id=session_id,
@@ -299,7 +299,7 @@ class ShellService:
                 data={"session_id": session_id, "command": command},
             )
 
-    async def write_to_process(
+    async def write_shell_input(
             self,
             session_id: str,
             input_text: str,
