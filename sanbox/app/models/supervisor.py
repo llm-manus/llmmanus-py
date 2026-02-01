@@ -35,3 +35,12 @@ class SupervisorActionResult(BaseModel):
     stop_result: Optional[Any] = Field(default=None, description="停止结果")
     start_result: Optional[Any] = Field(default=None, description="开始结果")
     shutdown_result: Optional[Any] = Field(default=None, description="关闭结果")
+
+
+class SupervisorTimeout(BaseModel):
+    """Supervisor超时时间销毁模型"""
+    status: Optional[str] = Field(default=None, description="超时设置状态")
+    active: bool = Field(default=False, description="超时销毁是否激活")
+    shutdown_time: Optional[str] = Field(default=None, description="销毁时间")
+    timeout_minutes: Optional[float] = Field(default=None, description="超时时间，单位分钟")
+    remaining_seconds: Optional[float] = Field(default=None, description="超时剩余秒数")
