@@ -125,3 +125,19 @@ async def cancel_timeout(
         msg=f"超时销毁已取消" if result.status == "timeout_cancelled" else "超时销毁未取消",
         data=result,
     )
+
+
+@router.post(
+    path="/timeout-status",
+    response_model=Response[SupervisorTimeout],
+)
+async def get_timeout_status(
+        supervisor_service: SupervisorService = Depends(get_supervisor_service),
+) -> Response[SupervisorTimeout]:
+    """获取当前supervisor的超时中台配置"""
+    result = await supervisor_service.get_timeout_status()
+    msg = "未激活超时销毁" if not result.active else f"剩余超时摧毁分钟数: {result.remaining_seconds // 60}"
+    return Response.success(
+        msg=msg,
+        data=result,
+    )

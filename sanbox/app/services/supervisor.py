@@ -253,3 +253,21 @@ class SupervisorService:
         self._expand_enabled = True
 
         return SupervisorTimeout(status="timeout_cancelled", active=False)
+
+    async def get_timeout_status(self) -> SupervisorTimeout:
+        """获取当前supervisor的超时状态"""
+        # 1.判断师范开启超时摧毁功能
+        if not self.timeout_active:
+            return SupervisorTimeout(active=False)
+
+        # 2.统计剩余秒数
+        remaining_seconds = 0
+        if self.shutdown_time:
+            remaining = self.shutdown_time - datetime.now()
+            remaining_seconds = max(0, remaining.total_seconds())
+
+        return SupervisorTimeout(
+            active=self.timeout_active,
+            shutdown_time=self.shutdown_time.isoformat() if self.shutdown_time else None,
+            remaining_seconds=remaining_seconds,
+        )
