@@ -6,6 +6,7 @@
 @File    :config.py
 """
 from functools import lru_cache
+from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -34,6 +35,18 @@ class Settings(BaseSettings):
     cos_scheme: str = "https"
     cos_bucket: str = ""
     cos_domain: str = ""
+
+    # Sandbox配置
+    sandbox_address: Optional[str] = None
+    sandbox_image: Optional[str] = None
+    sandbox_name_prefix: Optional[str] = None
+    sandbox_ttl_minutes: Optional[int] = 60
+    sandbox_network: Optional[str] = None
+    sandbox_chrome_args: Optional[str] = ""
+    sandbox_https_proxy: Optional[str] = None
+    sandbox_http_proxy: Optional[str] = None
+    sandbox_no_proxy: Optional[str] = None
+
 
     # 使用pydantic v2的写法来完成环境变量信息的告知
     model_config = SettingsConfigDict(
