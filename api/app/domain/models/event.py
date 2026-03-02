@@ -8,7 +8,7 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Literal, List, Union, Optional, Any, Dict
+from typing import Literal, List, Union, Optional, Any, Dict, Annotated
 
 from pydantic import BaseModel, Field
 
@@ -119,13 +119,17 @@ class DoneEvent(BaseEvent):
 
 
 # 定义应用事件类型申明
-Event = Union[
-    PlanEvent,
-    TitleEvent,
-    StepEvent,
-    MessageEvent,
-    ToolEvent,
-    WaitEvent,
-    ErrorEvent,
-    DoneEvent,
+Event = Annotated[
+    Union[
+        PlanEvent,
+        TitleEvent,
+        StepEvent,
+        MessageEvent,
+        ToolEvent,
+        WaitEvent,
+        ErrorEvent,
+        DoneEvent,
+    ],
+    Field(discriminator="type")
 ]
+
