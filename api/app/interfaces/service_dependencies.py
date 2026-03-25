@@ -12,12 +12,15 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.services.app_config_service import AppConfigService
+from app.application.services.session_service import SessionService
 from app.application.services.status_service import StatusService
+from app.domain.repositories.session_repository import SessionRepository
 from app.infrastructure.external.health_checker.mysql_health_checker import MysqlHealthChecker
 from app.infrastructure.external.health_checker.redis_health_checker import RedisHealthChecker
 from app.infrastructure.repositories.file_app_config_repository import FileAppConfigRepository
 from app.infrastructure.storage.mysql import get_db_session
 from app.infrastructure.storage.redis import RedisClient, get_redis
+from app.interfaces.repository_dependencies import get_db_session_repository
 from core.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -48,3 +51,9 @@ def get_status_service(
     # 2.创建服务并返回
     logger.info("加载获取StatusService")
     return StatusService(checkers=[mysql_checker, redis_checker])
+
+@lru_cache()
+def get_session_service(
+        session_repository: SessionRepository = Depends(get_db_session_repository),
+) -> SessionService:
+    return SessionService(session_repository=session_repository)
