@@ -5,6 +5,7 @@
 #Author  :Emcikem
 @File    :session_router.py
 """
+from datetime import datetime
 from typing import Optional, Dict, AsyncGenerator
 
 from fastapi import Depends
@@ -111,8 +112,9 @@ async def chat(
         async for event in agent_service.chat(
             session_id=session_id,
             message=request.message,
-            attachment=request.attachment,
-            latest_event_id=request.event_id
+            attachments=request.attachment,
+            latest_event_id=request.event_id,
+            timestamp=datetime.fromtimestamp(request.timestamp) if request.timestamp else None,
         ):
             # todo:等待实现，需要将event转换成流式响应数据
             pass

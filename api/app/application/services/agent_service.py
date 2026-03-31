@@ -6,16 +6,19 @@
 @File    :agent_service.py
 """
 import logging
+from datetime import datetime
 from typing import AsyncGenerator, Optional, List, Type
 
 from json_repair.json_parser import JSONParser
+from pydantic import TypeAdapter
 
 from app.domain.external.llm import LLM
 from app.domain.external.sandbox import Sandbox
 from app.domain.external.search import SearchEngine
 from app.domain.external.task import Task, TaskRunner
 from app.domain.models.app_config import AgentConfig, MCPConfig
-from app.domain.models.event import BaseEvent, ErrorEvent
+from app.domain.models.event import BaseEvent, ErrorEvent, MessageEvent, Event, DoneEvent, WaitEvent
+from app.domain.models.file import File
 from app.domain.models.session import Session, SessionStatus
 from app.domain.repositories.session_repository import SessionRepository
 
@@ -111,7 +114,7 @@ class AgentService:
             message: Optional[str] = None,
             attachments: Optional[List[str]] = None,
             latest_event_id: Optional[str] = None,
-            timestamp: Optional[int] = None,
+            timestamp: Optional[datetime] = None,
     ) -> AsyncGenerator[BaseEvent, None]:
         """根据传递的信息调用Agent服务发起对话请求"""
         try:
@@ -134,11 +137,63 @@ class AgentService:
                         logger.error(f"会话[{session}]创建任务失败")
                         raise RuntimeError(f"会话[{session}]创建任务失败")
 
-                    # todo
+                # 6.传递了消息则更新会话中的最后一条消息
+                await self._session_repository.update_latest_message(
+                    session_id=session_id,
+                    message=message,
+                    timestamp=timestamp,
+                )
 
+                # 7.创建一个人类消息事件
+                message_event = MessageEvent(
+                    role="user",
+                    message=message,
+                    attachments=[File(id=attachment) for attachment in attachments],
+                )
+
+                # 8.将事件添加到任务的输入流中，好让Agent获取到数据
+                event_id = await task.input_stream.put(message_event.model_dump_json())
+                message_event.id = event_id
+                await self._session_repository.add_event(session_id, message_event)
+
+                # 9.执行任务
+                await task.invoke()
+                logger.info(f"往会话[{session_id}]输入消息队列写入消息：{message[:50]}...")
+
+            # 10.记录日志展示会话已启动
+            logger.info(f"会话[{session_id}]已启动")
+            logger.info(f"会话[{session_id}]任务实例：{task}")
+
+            # 11.从任务的输出流中读取数据
+            while task and not task.done:
+                # 12.从输出消息队列中获取数据
+                event_id, event_str = await task.output_stream.get(start_id=latest_event_id, block_ms=0)
+                latest_event_id = event_id
+                if event_str is None:
+                    logger.debug(f"在会话[{session}]输出队列中未发现事件内容")
+                    continue
+
+                # 13.使用Pydantic提供的类型是配置器将event_str转换成指定类实例
+                event = TypeAdapter(Event).validate_json(event_str)
+                event.id = event_id
+                logger.debug(f"从会话[{session_id}]中获取事件：{type(event).__name__}")
+
+                # 14.将未读消息数重置为0
+                await self._session_repository.update_unread_message_count(session_id, 0)
+
+                # 15.将事件返回并判断事件类型是否为结束类型
+                yield event
+                if isinstance(event, (DoneEvent, ErrorEvent, WaitEvent)):
+                    break
+
+            # 16.循环外面表示这次任务AI端的已结束
+            logger.info(f"会话[{session_id}]本轮运行结束")
         except Exception as e:
-            # 记录日志并返回错误日志
+            # 17.记录日志并返回错误日志
             logger.error(f"任务会话[{session_id}]对话错误：{str(e)}")
             event = ErrorEvent(error=str(e))
             await self._session_repository.add_event(session_id, event)
             yield event
+        finally:
+            # 18.会话完整传递给前端后，表示至少用户肯定收到了这些消息，所以不应该有未读消息
+            await self._session_repository.update_unread_message_count(session_id, 0)

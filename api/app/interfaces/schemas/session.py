@@ -33,6 +33,6 @@ class ListSessionResponse(BaseModel):
 class ChatRequest(BaseModel):
     """聊天请求结构"""
     message: Optional[str] = None # 人类消息
-    attachments: Optional[List[str]] = None # 附件列表
+    attachments: Optional[List[str]] = None # 附件列表，传递的是文件id列表
     event_id: Optional[str] = None # 最新事件id
     timestamp: Optional[int] = None # 当前时间戳
