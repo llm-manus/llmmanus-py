@@ -29,3 +29,10 @@ class ListSessionItem(BaseModel):
 class ListSessionResponse(BaseModel):
     """获取会话列表基础信息响应结构"""
     sessions: List[ListSessionItem]
+
+class ChatRequest(BaseModel):
+    """聊天请求结构"""
+    message: Optional[str] = None # 人类消息
+    attachments: Optional[List[str]] = None # 附件列表
+    event_id: Optional[str] = None # 最新事件id
+    timestamp: Optional[int] = None # 当前时间戳

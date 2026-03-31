@@ -11,6 +11,7 @@ from functools import lru_cache
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.services.agent_service import AgentService
 from app.application.services.app_config_service import AppConfigService
 from app.application.services.session_service import SessionService
 from app.application.services.status_service import StatusService
@@ -57,3 +58,7 @@ def get_session_service(
         session_repository: SessionRepository = Depends(get_db_session_repository),
 ) -> SessionService:
     return SessionService(session_repository=session_repository)
+
+@lru_cache()
+def get_agent_service() -> AgentService:
+    return AgentService()

@@ -5,16 +5,18 @@
 #Author  :Emcikem
 @File    :session_router.py
 """
-from typing import Optional, Dict
+from typing import Optional, Dict, AsyncGenerator
 
-from fastapi import APIRouter, Depends
+from fastapi import Depends
 import logging
 
 from fastapi import APIRouter
+from sse_starlette import EventSourceResponse, ServerSentEvent
 
+from app.application.services.agent_service import AgentService
 from app.application.services.session_service import SessionService
 from app.interfaces.schemas import Response
-from app.interfaces.schemas.session import CreateSessionResponse, ListSessionResponse, ListSessionItem
+from app.interfaces.schemas.session import CreateSessionResponse, ListSessionResponse, ListSessionItem, ChatRequest
 from app.interfaces.service_dependencies import get_session_service
 
 logger = logging.getLogger(__name__)
@@ -90,3 +92,29 @@ async def delete_session(
     """根据传递的会话id删除指定任务会话"""
     await session_service.delete_session(session_id)
     return Response.success(msg="删除任务会话成功")
+
+@router.post(
+    path="/{session_id}/chat",
+    summary="向指定任务会话发起聊天请求",
+    description="向指定任务会话发起聊天请求"
+)
+async def chat(
+        session_id: str,
+        request: ChatRequest,
+        agent_service: AgentService = Depends(get_session_service),
+) -> EventSourceResponse:
+    """根据传递的会议id+chat请求数据向指定会话发起聊天请求"""
+
+    async def event_generator() -> AsyncGenerator[ServerSentEvent, None]:
+        """定义事件生成器，用于配合EventSourceResponse生成流式响应数据"""
+        # 1.调用Agent服务发起聊天
+        async for event in agent_service.chat(
+            session_id=session_id,
+            message=request.message,
+            attachment=request.attachment,
+            latest_event_id=request.event_id
+        ):
+            # todo:等待实现，需要将event转换成流式响应数据
+            pass
+
+    return EventSourceResponse(event_generator())
