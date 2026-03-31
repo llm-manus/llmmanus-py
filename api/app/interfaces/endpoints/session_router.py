@@ -116,7 +116,8 @@ async def chat(
             latest_event_id=request.event_id,
             timestamp=datetime.fromtimestamp(request.timestamp) if request.timestamp else None,
         ):
-            # todo:等待实现，需要将event转换成流式响应数据
-            pass
+            # 2.将Agent事件转换为sse数据（因为普通的event没法提供流式事件传输）
+            # todo 统一
+            yield ServerSentEvent(event=event.type, data=event.model_dump_json())
 
     return EventSourceResponse(event_generator())
