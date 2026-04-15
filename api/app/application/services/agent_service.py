@@ -175,7 +175,7 @@ class AgentService:
 
                 # 13.使用Pydantic提供的类型是配置器将event_str转换成指定类实例
                 event = TypeAdapter(Event).validate_json(event_str)
-                event.id = event_id
+                event.event_id = event_id
                 logger.debug(f"从会话[{session_id}]中获取事件：{type(event).__name__}")
 
                 # 14.将未读消息数重置为0

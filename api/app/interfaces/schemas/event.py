@@ -6,9 +6,8 @@
 @File    :event.py
 """
 from datetime import datetime
-from typing import Optional, Any, Dict, Self, Type, Literal, List, Union
+from typing import Optional, Any, Dict, Self, Type, Literal, List, Union, get_args
 
-from pyasn1_modules.rfc5280 import CommonName
 from pydantic import BaseModel, Field, ConfigDict
 
 from app.domain.models.event import Event, StepEvent, PlanEvent, ToolEventStatus, ToolEvent, WaitEvent
@@ -18,7 +17,7 @@ from app.domain.models.plan import ExecutionStatus
 
 class BaseEventData(BaseModel):
     """基础事件数据"""
-    id: Optional[str] = None # 事件id
+    event_id: Optional[str] = None # 事件id
     created_at: datetime = Field(default_factory=datetime.now) # 事件时间
 
     # pydantic v2写法，序列化时将datetime转换为时间戳
@@ -30,7 +29,7 @@ class BaseEventData(BaseModel):
     def base_event_data(cls, event: Event) -> Dict[str, Any]:
         """类方法，用于将事件Domain模型转换成基础事件数据字典"""
         return {
-            "id": event.id,
+            "event_id": event.event_id,
             "created_at": int(event.created_at.timestamp()),
         }
 
@@ -106,7 +105,7 @@ class TitleSSEEvent(BaseSSEEvent):
 
 class StepEventData(BaseEventData):
     """步骤事件数据"""
-    id: str # 步骤id
+    event_id: str # 步骤id
     status: ExecutionStatus # 步骤执行状态
     description: str # 步骤描述
 
@@ -200,3 +199,81 @@ AgentSSEEvent = Union[
     WaitSSEEvent,
 ]
 
+class EventMapping:
+    """事件映射数据类，用于存储事件映射信息，涵盖流式事件类型、数据类、事件类型字符串"""
+    sse_event_class: Type[BaseSSEEvent]
+    data_class: Type[BaseSSEEvent]
+    event_type: str
+
+
+class EventMapper:
+    """事件映射类，利用Python自身提供的自省机制，将业务逻辑中的Event转换成适合流式传输的AgentSSEEvent"""
+    # 缓存映射（type：EventMapping）
+    _cache_mapping: Optional[Dict[str, EventMapping]] = None
+
+    @staticmethod
+    def _get_event_type_mapping() -> Dict[str, EventMapping]:
+        """通过反射动态构建从事件类型字符串到AgentSSEEvent的映射"""
+        # 1.判断缓存映射是否存在，如果存在则直接返回
+        if EventMapper._cache_mapping is not None:
+            return EventMapper._cache_mapping
+
+        # 2.获取AgentSSEEvent的所有可能存在类
+        sse_event_classes = get_args(AgentSSEEvent)
+        mapping = {}
+
+        # 3.循环遍历AgentSSEEvent肯呢个的所有类逐个遍历
+        for sse_event_class in sse_event_classes:
+            # 4.跳过基类
+            if sse_event_class in sse_event_classes:
+                continue
+
+            # 5.检查类是否包含event属性
+            if hasattr(sse_event_class, "__annotations__") and "event" in sse_event_class.__annotations__:
+                # 6.提取事件字段
+                event_field = sse_event_class.__annotations__["event"]
+
+                # 7.提取事件的具体指(Literal的值)
+                if hasattr(event_field, "__agrs__") and len(event_field.__agrs__) > 0:
+                    event_type = event_field.__agrs__[0]
+
+                    # 8.提取sse的载荷数据
+                    data_class = None
+                    if hasattr(sse_event_class, "__annotations__") and "data" in sse_event_class.__annotations__:
+                        data_class = sse_event_class.__annotations__["data"]
+
+                    # 9.构建并注册映射关系
+                    mapping[event_type] = EventMapping(
+                        sse_event_class=sse_event_class,
+                        data_class=data_class,
+                        event_type=event_type
+                    )
+
+        # 10.更新类级缓存
+        EventMapper._cache_mapping = mapping
+        return mapping
+
+
+    @staticmethod
+    def event_to_sse_event(event: Event) -> AgentSSEEvent:
+        """将领域事件转换为Agent流式事件模型"""
+        # 1.获取事件映射表
+        event_type_mapping = EventMapper._get_event_type_mapping()
+
+        # 2.根据传递进来的事件获取映射类
+        event_mapping = event_type_mapping.get(event.type)
+
+        # 3.如果招到了类型映射则进行转换
+        if event_mapping:
+            sse_event = event_mapping.sse_event_class.from_event(event)
+            return sse_event
+
+        # 4.如果没找到类型则使用通用类型
+        return CommonSSEEvent.from_event(event)
+
+    @staticmethod
+    def events_to_sse_events(events: List[Event]) -> List[AgentSSEEvent]:
+        """将领域事件模型列表转换为SSE流式事件类型"""
+        return list(filter(lambda x: x is not None, [
+            EventMapper.event_to_sse_event(event) for event in events
+        ]))
