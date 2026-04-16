@@ -10,12 +10,12 @@ from typing import Union, Dict, List, Any, Optional
 
 import json_repair
 
-from app.domain.external.json_parser import JsonParser
+from app.domain.external.json_parser import JSONParser
 
 logger = logging.getLogger(__name__)
 
 
-class RepairJsonParser(JsonParser):
+class RepairJSONParser(JSONParser):
     """基于修复逻辑的json解析器"""
 
     async def invoke(self, text: str, default_value: Optional[Any] = None) -> Union[Dict, List, Any]:

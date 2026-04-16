@@ -8,7 +8,7 @@
 from typing import Protocol, Optional, Any, Union, List, Dict
 
 
-class JsonParser(Protocol):
+class JSONParser(Protocol):
     """JSON解析器，用于解析Json字符串并修复"""
 
     async def invoke(self, text: str, default_value: Optional[Any] = None) -> Union[Dict, List, Any]:

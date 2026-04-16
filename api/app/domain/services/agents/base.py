@@ -11,7 +11,7 @@ import uuid
 from abc import ABC
 from typing import Optional, List, AsyncGenerator, Dict, Any
 
-from app.domain.external.json_parser import JsonParser
+from app.domain.external.json_parser import JSONParser
 from app.domain.external.llm import LLM
 from app.domain.models.app_config import AgentConfig
 from app.domain.models.event import Event, ToolEvent, ToolEventStatus, ErrorEvent, MessageEvent
@@ -38,7 +38,7 @@ class BaseAgent(ABC):
             session_repository: SessionRepository, # 会话数据仓库
             agent_config: AgentConfig,  # Agent配置
             llm: LLM,  # 语言模型协议
-            json_parser: JsonParser,  # JSON输出解释器
+            json_parser: JSONParser,  # JSON输出解释器
             tools: List[BaseTool],  # 工具列表
     ) -> None:
         """构造函数，完成Agent的初始化"""
