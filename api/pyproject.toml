@@ -6,10 +6,12 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
 	"aiomysql>=0.3.2",
+	"async-lru",
 	"beautifulsoup4>=4.14.3",
 	"browser-use>=0.11.1",
 	"browser-use-sdk>=2.0.12",
 	"cos-python-sdk-v5>=1.9.38",
+	"docker>=7.1.0",
 	"fastapi>=0.121.3",
 	"filelock>=3.20.0",
 	"greenlet>=3.2.4",
