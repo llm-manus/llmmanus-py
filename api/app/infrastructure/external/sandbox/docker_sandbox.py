@@ -10,7 +10,7 @@ import logging
 import socket
 import uuid
 from tkinter.font import names
-from typing import Optional, Self
+from typing import Optional, Self, BinaryIO, io
 
 import docker
 from async_lru import alru_cache
@@ -255,3 +255,203 @@ class DockerSandbox(Sandbox):
         # 经过max_retries次检测后还无法确认则抛出异常
         logger.error(f"在经过{max_retries}次尝试后仍无法确认Sandbox Supervisor状态信息")
         raise Exception(f"在经过{max_retries}次尝试后仍无法确认Sandbox Supervisor状态信息")
+
+    async def read_file(
+            self,
+            filepath: str,
+            start_line: Optional[int] = None,
+            end_line: Optional[int] = None,
+            sudo: bool = False,
+            max_length: int = 10000,
+    ) -> ToolResult:
+        """读取沙箱中指定路径的文件内容"""
+        response = await self.client.post(
+            f"{self._base_url}/api/file/read-file",
+            json={
+                "filepath": filepath,
+                "start_line": start_line,
+                "end_line": end_line,
+                "sudo": sudo,
+                "max_length": max_length,
+            }
+        )
+        return ToolResult.from_sandbox(**response.json())
+
+    async def write_file(
+            self,
+            filepath: str,
+            content: str,
+            append: bool = False,
+            leading_newline: bool = False,
+            trailing_newline: bool = False,
+            sudo: bool = False,
+    ) -> ToolResult:
+        """向沙箱中指定文件写入内容"""
+        response = await self.client.post(
+            f"{self._base_url}/api/file/write-file",
+            json={
+                "filepath": filepath,
+                "content": content,
+                "append": append,
+                "leading_newline": leading_newline,
+                "trailing_newline": trailing_newline,
+                "sudo": sudo,
+            }
+        )
+        return ToolResult.from_sandbox(**response.json())
+
+    async def replace_in_file(
+            self,
+            filepath: str,
+            old_str: str,
+            new_str: str,
+            sudo: bool = False,
+    ) -> ToolResult:
+        """替换沙箱中文件的旧内容为指定内容"""
+        response = await self.client.post(
+            f"{self._base_url}/api/file/replace-in-file",
+            json={
+                "filepath": filepath,
+                "old_str": old_str,
+                "new_str": new_str,
+                "sudo": sudo,
+            }
+        )
+        return ToolResult.from_sandbox(**response.json())
+
+    async def search_in_file(self, filepath: str, regex: str, sudo: bool = False) -> ToolResult:
+        """搜索沙箱中指定文件的内容"""
+        response = await self.client.post(
+            f"{self._base_url}/api/file/replace-in-file",
+            json={
+                "filepath": filepath,
+                "regex": regex,
+                "sudo": sudo,
+            }
+        )
+        return ToolResult.from_sandbox(**response.json())
+
+    async def find_files(self, dir_path: str, glob_pattern: str) -> ToolResult:
+        """查找沙箱中指定目录的文件列表"""
+        response = await self.client.post(
+            f"{self._base_url}/api/file/find-file",
+            json={
+                "dir_path": dir_path,
+                "glob_pattern": glob_pattern,
+            }
+        )
+        return ToolResult.from_sandbox(**response.json())
+
+    async def list_files(self, dir_path: str) -> ToolResult:
+        """传递目录列出沙箱指定目录下的所有文件"""
+        return await self.find_files(dir_path, "*")
+
+    async def check_file_exists(self, filepath: str) -> ToolResult:
+        """传递指定路径检查沙箱中指定文件是否存在"""
+        response = await self.client.post(
+            f"{self._base_url}/api/file/check-file-exists",
+            json={
+                "filepath": filepath,
+            }
+        )
+        return ToolResult.from_sandbox(**response.json())
+
+    async def delete_file(self, filepath: str) -> ToolResult:
+        """传递路径删除指定的文件"""
+        response = await self.client.post(
+            f"{self._base_url}/api/file/delete-file",
+            json={
+                "filepath": filepath,
+            }
+        )
+        return ToolResult.from_sandbox(**response.json())
+
+    async def upload_file(
+            self,
+            file_data: BinaryIO,
+            filepath: str,
+            filename: str = None,
+    ) -> ToolResult:
+        """将文件源上传至沙箱指定位置"""
+        # 1.预配置上传数据
+        files = {"file": (filename or "upload", file_data, "application/octet-stream")}
+        data = {"filepath": filepath}
+
+        # 2.发起请求上传数据获取响应
+        response = await self.client.post(
+            f"{self._base_url}/api/file/upload-file",
+            files=files,
+            data=data,
+        )
+        return ToolResult.from_sandbox(**response.json())
+
+    async def download_file(self, filepath: str) -> BinaryIO:
+        """从沙箱中下载文件"""
+        response = await self.client.get(
+            f"{self._base_url}/api/file/download-file",
+            params={"filepath": filepath},
+        )
+        response.raise_for_status()
+
+        return io.BytesIO(response.content)
+
+    async def exec_command(self, session_id: str, exec_dir: str, command: str) -> ToolResult:
+        """在沙箱中执行命令"""
+        response = await self.client.post(
+            f"{self._base_url}/api/shell/exec-command",
+            json={
+                "session_id": session_id,
+                "exec_dir": exec_dir,
+                "command": command,
+            }
+        )
+        return ToolResult.from_sandbox(**response.json())
+
+    async def read_shell_output(self, session_id: str, console: bool = False) -> ToolResult:
+        """读取啥"""
+        response = await self.client.post(
+            f"{self._base_url}/api/shell/exec-command",
+            json={
+                "session_id": session_id,
+                "console": console,
+            }
+        )
+        return ToolResult.from_sandbox(**response.json())
+
+    async def write_shell_input(
+            self,
+            session_id: str,
+            input_text: str,
+            press_enter: bool = True,
+    ) -> ToolResult:
+        """向沙箱的Shell进程写入数据"""
+        response = await self.client.post(
+            f"{self._base_url}/api/shell/exec-command",
+            json={
+                "session_id": session_id,
+                "input_text": input_text,
+                "press_enter": press_enter,
+            }
+        )
+        return ToolResult.from_sandbox(**response.json())
+
+    async def wait_process(self, session_id: str, seconds: Optional[int] = None) -> ToolResult:
+        """等待沙箱中进程的执行"""
+        response = await self.client.post(
+            f"{self._base_url}/api/shell/wait-process",
+            json={
+                "session_id": session_id,
+                "seconds": seconds,
+            }
+        )
+        return ToolResult.from_sandbox(**response.json())
+
+    async def kill_process(self, session_id: str) -> ToolResult:
+        """杀死沙箱中指定的进程"""
+        response = await self.client.post(
+            f"{self._base_url}/api/shell/exec-command",
+            json={
+                "session_id": session_id,
+            }
+        )
+        return ToolResult.from_sandbox(**response.json())
