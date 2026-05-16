@@ -23,3 +23,18 @@ class ListMCPServerItem(BaseModel):
 class ListMCPServerResponse(BaseModel):
     """获取MCP服务列表响应结构"""
     mcp_servers: List[ListMCPServerItem] = Field(default_factory=list)  # MCP服务列表
+
+class ListA2AServerItem(BaseModel):
+    """A2A服务列表条目选项"""
+    id: str = "" # id
+    name: str = "" # 名字
+    description: str = "" # 描述信息
+    input_models: List[str] = Field(default_factory=list) # 输入模态
+    output_models: List[str] = Field(default_factory=list) # 输出模态
+    streaming: bool = False # 是否支持流式
+    push_notification: bool = False # 是否支持推送通知
+    enabled: bool = True # 启动状态
+
+class ListA2AServerResponse(BaseModel):
+    """获取A2A服务列表相应结构"""
+    a2a_servers: List[ListA2AServerItem] = Field(default_factory=list) # A2A服务列表

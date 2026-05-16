@@ -5,13 +5,15 @@
 #Author  :Emcikem
 @File    :app_config_service.py
 """
+import uuid
 from typing import List
 
 from app.application.errors.exception import NotFoundError
-from app.domain.models.app_config import AppConfig, LLMConfig, AgentConfig, MCPConfig
+from app.domain.models.app_config import AppConfig, LLMConfig, AgentConfig, MCPConfig, A2AConfig, A2AServerConfig
 from app.domain.repositories.app_config_repository import AppConfigRepository
+from app.domain.services.tools.a2a import A2AClientManager
 from app.domain.services.tools.mcp import MCPClientManager
-from app.interfaces.schemas.app_config import ListMCPServerItem
+from app.interfaces.schemas.app_config import ListMCPServerItem, ListA2AServerItem
 
 
 class AppConfigService:
@@ -130,3 +132,54 @@ class AppConfigService:
         app_config.mcp_config.mcpServers[server_name].enabled = enabled
         self.app_config_repository.save(app_config)
         return app_config.mcp_config
+
+    async def create_a2a_server(self, base_url: str) -> A2AConfig:
+        """根据传递的配置新增a2a服务器"""
+        # 1.获取当前的应用配置
+        app_config = await self._load_app_config()
+
+        # 2.往数据中新增a2a服务(在新增之前其实可以检测下当前Agent是否存在)
+        a2a_server_config = A2AServerConfig(
+            id=str(uuid.uuid4()),
+            base_url=base_url,
+            enabled=True,
+        )
+        app_config.a2a_config.a2a_servers.append(a2a_server_config)
+
+        # 3.调用数据仓库更新
+        self.app_config_repository.save(app_config)
+        return app_config.a2a_config
+
+    async def get_a2a_servers(self) -> List[ListA2AServerItem]:
+        """获取A2A服务列表"""
+        # 1.获取当前的应用配置
+        app_config = await self._load_app_config()
+
+        # 2.构建a2a客户端管理端，对配置信息不过滤
+        a2a_servers = []
+        a2a_client_manager = A2AClientManager(app_config.a2a_config)
+
+        try:
+            # 3.初始化a2a客户端管理器
+            await a2a_client_manager.initialize()
+
+            # 4.获取Agent卡片列表
+            agent_cards = a2a_client_manager.agent_cards
+
+            # 5.组装响应结构
+            for id, agent_card in agent_cards.items():
+                a2a_servers.append(ListA2AServerItem(
+                    id=id,
+                    name=agent_card.get("name", ""),
+                    description=agent_card.get("description", ""),
+                    input_models=agent_card.get("defaultInputModels", []),
+                    output_models=agent_card.get("defaultOutputModels", []),
+                    streaming=agent_card.get("capabilities", {}).get("streaming", False),
+                    push_notification=agent_card.get("capabilities", {}).get("pushNotification", False),
+                    enabled=agent_card.get("enabled", False),
+                ))
+        finally:
+            # 6.清除客户端管理器资源
+            await a2a_client_manager.cleanup()
+
+        return a2a_serverss
