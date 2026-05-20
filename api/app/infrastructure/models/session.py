@@ -62,7 +62,7 @@ class SessionModel(Base):
         JSONB,
         nullable=False,
         server_default=text("'[]'::jsonb"),
-    ) #
+    ) # 文件
     memories: Mapped[Dict[str, Any]] = mapped_column(
         JSONB,
         nullable=False,
