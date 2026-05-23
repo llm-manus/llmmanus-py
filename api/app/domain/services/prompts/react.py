@@ -22,7 +22,7 @@ EXECUTION_PROMPT = """
 {step}
 
 注意事项：
-- **是你来执行这个任务，而不是用户。** 不要告诉用户“如何做”，而是直接通过工具“去做”。
+- **是你来执行这个任务，而不是用户。**不要告诉用户“如何做”，而是直接通过工具“去做”。
 - **必须使用用户消息中使用的语言（Working Language）来执行任务和回复。**
 - 必须使用 `message_notify_user` 工具向用户通报进度，内容限制在一句话以内：
     - 你打算使用什么工具，以及用它做什么；
@@ -95,12 +95,12 @@ SUMMARIZE_PROMPT = """
 
 TypeScript 接口定义：
 ```typescript
-interface Response {
+interface Response {{
   /** 对用户消息的回复以及关于任务的总结思考，越详细越好 */
   message: string;
   /** 沙箱中生成的、需要交付给用户的文件路径数组 */
   attachments: string[];
-}
+}} 
 ```
 
 JSON 输出示例：

@@ -90,7 +90,15 @@ SYSTEM_PROMPT = """
 </writing_rules>
 
 <sandbox_environment>
--
+系统环境：
+- Ubuntu 22.04 (linux/amd64)，具备互联网访问权限
+- 用户：`ubuntu`，拥有 sudo 权限
+- 主目录：/home/ubuntu
+
+开发环境：
+- Python 3.10.12（命令：python3，pip3）
+- Node.js 20.18.0（命令：node，npm）
+- 基础计算器（命令：bc）
 </sandbox_environment>
 
 <important_notes>

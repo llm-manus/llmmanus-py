@@ -44,13 +44,12 @@ class ReActAgent(BaseAgent):
         async for event in self.invoke(query):
             # 4.判断事件类型执行不同的操作
             if isinstance(event, ToolEvent):
-                # 5.工具事件续页判断工具的名称是否为message_ask_user
+                # 5.工具事件需要判断工具的名称是否为message_ask_user
                 if event.function_name == "message_ask_user":
                     # 6.工具如果在调用中，我们需要返回一条消息告知用户要让用户处理什么
                     if event.status == ToolEventStatus.CALLING:
                         yield MessageEvent(
                             role="assistant",
-                            # todo:由于message_ask_user工具还未实现，所以参数未定，暂定为text
                             message=event.function_args.get("text", "")
                         )
                     elif event.status == ToolEventStatus.CALLED:

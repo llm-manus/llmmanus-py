@@ -48,9 +48,7 @@ class Memory(BaseModel):
         for message in self.messages:
             # 2.判断消息的角色是否为tool
             if self.get_message_role(message) == 'tool':
-                # todo:工具的名字待定
-                if message.get('function_name') in []:
-                    # todo:工具的调用结果待确定
+                if message.get('function_name') in ["browser_view", "browser_navigate"]:
                     message["content"] = "(removed)"
                     logger.debug(f"从记忆中移除对应工具的结果: {message['function_name']}")
 

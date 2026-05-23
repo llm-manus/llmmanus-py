@@ -47,8 +47,6 @@ class Plan(BaseModel):
     status: ExecutionStatus = ExecutionStatus.PENDING  # 规划的状态
     errors: Optional[str] = None  # 错误信息
 
-    # todo:未预留result用于记录规划的结果信息
-
     @property
     def done(self) -> bool:
         """只读属性，用于判断计划是否已经结束"""
