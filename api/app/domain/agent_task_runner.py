@@ -21,7 +21,7 @@ from app.domain.external.llm import LLM
 from app.domain.external.sandbox import Sandbox
 from app.domain.external.search import SearchEngine
 from app.domain.external.task import TaskRunner, Task
-from app.domain.models.app_config import AgentConfig, MCPConfig
+from app.domain.models.app_config import AgentConfig, MCPConfig, A2AConfig
 from app.domain.models.event import ErrorEvent, Event, MessageEvent, BaseEvent, ToolEvent, ToolEventStatus, \
     BrowserToolContent, SearchToolContent, ShellToolContent, FileToolContent, MCPToolContent, A2AToolContent, \
     TitleEvent, WaitEvent, DoneEvent
@@ -46,7 +46,7 @@ class AgentTaskRunner(TaskRunner):
             llm: LLM, # 大模型模型
             agent_config: AgentConfig, # 智能体配置
             mcp_config: MCPConfig, # mcp配置
-            a2a_config: AgentConfig, # a2a配置
+            a2a_config: A2AConfig, # a2a配置
             session_id: str, # 会话id
             session_repository: SessionRepository, # 会话仓库
             file_storage: FileStorage, # 文件存储桶

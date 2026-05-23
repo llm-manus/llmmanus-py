@@ -104,6 +104,8 @@ class BaseAgent(ABC):
 
                     # 6.取出非空消息并处理工具调用
                     filtered_message = {"role": "assistant", "content": message.get("content")}
+                    if message.get("reasoning_content"):
+                        filtered_message["reasoning_content"] = message.get("reasoning_content")
                     if message.get("tool_calls"):
                         # 7.取出工具调用的数据，限制LLM一次只能调用工具
                         filtered_message["tool_calls"] = message.get("tool_calls")[:1]

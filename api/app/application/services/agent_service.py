@@ -9,17 +9,20 @@ import logging
 from datetime import datetime
 from typing import AsyncGenerator, Optional, List, Type
 
-from json_repair.json_parser import JSONParser
 from pydantic import TypeAdapter
 
+from app.domain.agent_task_runner import AgentTaskRunner
+from app.domain.external.file_storage import FileStorage
+from app.domain.external.json_parser import JSONParser
 from app.domain.external.llm import LLM
 from app.domain.external.sandbox import Sandbox
 from app.domain.external.search import SearchEngine
-from app.domain.external.task import Task, TaskRunner
-from app.domain.models.app_config import AgentConfig, MCPConfig
+from app.domain.external.task import Task
+from app.domain.models.app_config import AgentConfig, MCPConfig, A2AConfig
 from app.domain.models.event import BaseEvent, ErrorEvent, MessageEvent, Event, DoneEvent, WaitEvent
 from app.domain.models.file import File
 from app.domain.models.session import Session, SessionStatus
+from app.domain.repositories.file_repository import FileRepository
 from app.domain.repositories.session_repository import SessionRepository
 
 logger = logging.getLogger(__name__)
