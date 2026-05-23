@@ -3,7 +3,7 @@
 """
 @Time    :2026/5/23 10:46
 #Author  :Emcikem
-@File    :file_toutes.py
+@File    :file_routes.py
 """
 import logging
 import urllib.parse
@@ -67,7 +67,7 @@ async def download_file(
     # 1.调用服务获取文件源数据
     file_data, fileinfo = await file_service.download_file(file_id)
 
-    # 2.对文件中的中午名进行url编码
+    # 2.对文件中的中文名进行url编码
     encoded_filename = urllib.parse.quote(fileinfo.filename)
 
     # 3.返回文件流数据
@@ -76,6 +76,6 @@ async def download_file(
         media_type=fileinfo.mime_type,
         headers={
             "Content-Disposition": f"attachment; filename*=utf-8''{encoded_filename}",
-            "Content-Length": str(fileinfo.length),
+            "Content-Length": str(fileinfo.size),
         }
     )

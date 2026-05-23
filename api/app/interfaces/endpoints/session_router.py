@@ -54,8 +54,8 @@ async def get_all_session(
         ListSessionItem(
             session_id=session.id,
             title=session.title,
-            latest_message=session.last_message,
-            latest_message_at=session.last_message_at,
+            latest_message=session.latest_message,
+            latest_message_at=session.latest_message_at,
             status=session.status,
             unread_message_count=session.unread_message_count,
         )

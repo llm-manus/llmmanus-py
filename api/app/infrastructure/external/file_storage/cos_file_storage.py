@@ -64,7 +64,7 @@ class COSFileStorage(FileStorage):
                 key=cos_key,
                 extension=file_extension,
                 mime_type=upload_file.content_type or "",
-                size=upload_file.size
+                size=upload_file.size,
             )
             await self.file_repository.save(file)
 

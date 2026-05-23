@@ -1,0 +1,30 @@
+CREATE TABLE `session` (
+  `id` varchar(255) NOT NULL COMMENT '会话id',
+  `sandbox_id` varchar(255) DEFAULT NULL COMMENT '沙箱id',
+  `task_id` varchar(255) DEFAULT NULL COMMENT '任务id',
+  `title` varchar(255) NOT NULL DEFAULT '' COMMENT '会话标题',
+  `unread_message_count` int NOT NULL DEFAULT 0 COMMENT '未读消息数',
+  `latest_message` text NOT NULL COMMENT '最后一条消息',
+  `latest_message_at` datetime DEFAULT NULL COMMENT '最后一条消息时间',
+  `events` json NOT NULL COMMENT '事件类型',
+  `files` json NOT NULL COMMENT '文件',
+  `memories` json NOT NULL COMMENT '会话两个Agent的记忆',
+  `status` varchar(255) NOT NULL DEFAULT '' COMMENT '会话状态',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP(0) ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP(0) COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会话表';
+
+
+CREATE TABLE `files` (
+  `id` varchar(255) NOT NULL COMMENT '文件id',
+  `filename` varchar(255) NOT NULL DEFAULT '' COMMENT '文件名字',
+  `filepath` varchar(255) NOT NULL DEFAULT '' COMMENT '文件路径',
+  `key` varchar(255) NOT NULL DEFAULT '' COMMENT '腾讯云cos对象存储中的文件路径',
+  `extension` varchar(255) NOT NULL DEFAULT '' COMMENT '文件扩展名',
+  `mime_type` varchar(255) NOT NULL DEFAULT '' COMMENT '文件mime-type类型',
+  `size` int NOT NULL DEFAULT 0 COMMENT '文件大小',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP(0) ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP(0) COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文件数据表';

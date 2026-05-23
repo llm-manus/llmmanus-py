@@ -42,7 +42,7 @@ class SessionService:
         """根据传递的会话id删除任务会话"""
         # 1.先检查会话是否存在
         logging.info(f"正在删除会话，会话id：{session_id}")
-        session = await self._session_repository.get_all(session_id)
+        session = await self._session_repository.get_by_id(session_id)
         if not session:
             logging.error(f"会话[{session_id}]不存在，删除失败")
             raise NotFoundError(f"会话[{session_id}]不存在，删除失败")
