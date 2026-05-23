@@ -32,24 +32,24 @@ class MCPTransport(str, Enum):
     """MCP传输类型枚举"""
     STDIO = "stdio"  # 本地输入输出
     SSE = "sse"  # 流式事件传输
-    STREAMABLE_HTTP = "streamable_htp"  # 可流式的HTTP
+    STREAMABLE_HTTP = "streamable_http"  # 可流式的HTTP
 
 
 class MCPServerConfig(BaseModel):
     """MCP单条服务器配置"""
     # 通用字段配置
     transport: MCPTransport = MCPTransport.STREAMABLE_HTTP  # 传输协议
-    enabled: bool = True  # 是否开启
-    description: Optional[str] = None  # MCP服务的描述
-    env: Optional[Dict[str, Any]] = None  # 环境变量
+    enabled: bool = True  # 是否开启，默认为True
+    description: Optional[str] = None  # 服务器描述
+    env: Optional[Dict[str, Any]] = None  # 环境变量配置
 
     # stdio配置
-    command: Optional[str] = None  # 启动命令
+    command: Optional[str] = None  # 启用命令
     args: Optional[List[str]] = None  # 命令参数
 
-    # streamable_http与sse配置
-    url: Optional[str] = None  # MCP服务的URL地址
-    headers: Optional[Dict[str, str]] = None  # headers请求头
+    # streamable_http&sse配置
+    url: Optional[str] = None  # MCP服务URL地址
+    headers: Optional[Dict[str, Any]] = None  # MCP服务请求头
 
     model_config = ConfigDict(extra="allow")
 
@@ -58,13 +58,13 @@ class MCPServerConfig(BaseModel):
         """校验mcp_server_config的相关信息，包含url+command"""
         # 1.判断transport是否为sse/streamable_http
         if self.transport in [MCPTransport.SSE, MCPTransport.STREAMABLE_HTTP]:
-            # 2.这两种传输方式需要判断url是否传递
+            # 2.这两种模式需要传递url
             if not self.url:
-                raise ValueError("在sse或streamable_http传输协议中必须传递url")
+                raise ValueError("在sse或streamable_http模式下必须传递url")
 
         # 3.判断transport是否为stdio类型
         if self.transport == MCPTransport.STDIO:
-            # 4.判断command也就是启动命令是否传递
+            # 4.stdio类型必须传递command
             if not self.command:
                 raise ValueError("在stdio模式下必须传递command")
 

@@ -349,9 +349,9 @@ class AgentTaskRunner(TaskRunner):
                         await self._session_repository.update_status(self._session_id, SessionStatus.WAITING)
                         return
 
-                # 11.判断如果输入消息队列为空则跳出循环
-                if not await task.input_stream.is_empty():
-                    break
+                    # 11.判断如果输入消息队列为空则跳出循环
+                    if not await task.input_stream.is_empty():
+                        break
 
             # 12.更新会话状态为已完成
             await self._session_repository.update_status(self._session_id, SessionStatus.COMPLETED)

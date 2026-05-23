@@ -38,7 +38,7 @@ async def get_llm_config(
 @router.post(
     path="/llm",
     response_model=Response[LLMConfig],
-    summary="获取LLM配置信息",
+    summary="更新LLM配置信息",
     description="更新LLM配置信息时，当api_key为空的时候表示不更新该字段"
 )
 async def update_llm_config(
@@ -70,7 +70,7 @@ async def get_agent_config(
 @router.post(
     path="/agent",
     response_model=Response[AgentConfig],
-    summary="获取Agent通用配置信息",
+    summary="更新Agent通用配置信息",
     description="包含最大迭代次数、最大重试次数、最大搜索结果数"
 )
 async def update_agent_config(

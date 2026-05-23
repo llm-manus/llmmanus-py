@@ -151,7 +151,7 @@ class AgentService:
                 message_event = MessageEvent(
                     role="user",
                     message=message,
-                    attachments=[File(id=attachment) for attachment in attachments],
+                    attachments=[File(id=attachment) for attachment in attachments] if attachments else [],
                 )
 
                 # 8.将事件添加到任务的输入流中，好让Agent获取到数据
