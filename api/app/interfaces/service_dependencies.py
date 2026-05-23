@@ -13,12 +13,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.services.agent_service import AgentService
 from app.application.services.app_config_service import AppConfigService
+from app.application.services.file_service import FileService
 from app.application.services.session_service import SessionService
 from app.application.services.status_service import StatusService
+from app.domain.external.file_storage import FileStorage
+from app.domain.repositories.file_repository import FileRepository
 from app.domain.repositories.session_repository import SessionRepository
+from app.infrastructure.external.file_storage.cos_file_storage import COSFileStorage
 from app.infrastructure.external.health_checker.mysql_health_checker import MysqlHealthChecker
 from app.infrastructure.external.health_checker.redis_health_checker import RedisHealthChecker
+from app.infrastructure.repositories.db_file_repository import DBFileRepository
 from app.infrastructure.repositories.file_app_config_repository import FileAppConfigRepository
+from app.infrastructure.storage.cos import Cos, get_cos
 from app.infrastructure.storage.mysql import get_db_session
 from app.infrastructure.storage.redis import RedisClient, get_redis
 from app.interfaces.repository_dependencies import get_db_session_repository
@@ -52,6 +58,25 @@ def get_status_service(
     # 2.创建服务并返回
     logger.info("加载获取StatusService")
     return StatusService(checkers=[mysql_checker, redis_checker])
+
+@lru_cache()
+def get_file_service(
+        cos: Cos = Depends(get_cos),
+        db_session: AsyncSession = Depends(get_db_session),
+) -> FileService:
+    # 1.初始化文件仓库和文件存储捅
+    file_repository = DBFileRepository(db_session=db_session)
+    file_storage = COSFileStorage(
+        bucket=settings.cos_bucket,
+        cos=cos,
+        file_repository=file_repository,
+    )
+
+    # 2.构建服务并返回
+    return FileService(
+        file_storage=file_storage,
+        file_repository=file_repository,
+    )
 
 @lru_cache()
 def get_session_service(
