@@ -6,14 +6,13 @@
 @File    :agent_task_runner.py
 """
 import asyncio
+import io
 import logging
 import uuid
-from email.errors import MessageError
-from typing import List, AsyncGenerator, io
+from typing import List, AsyncGenerator
 
 from fastapi import UploadFile
 from pydantic import TypeAdapter
-from watchfiles import awatch
 
 from app.domain.external.browser import Browser
 from app.domain.external.file_storage import FileStorage
@@ -34,7 +33,7 @@ from app.domain.models.tool_result import ToolResult
 from app.domain.repositories.file_repository import FileRepository
 from app.domain.repositories.session_repository import SessionRepository
 from app.domain.services.flows.planner_react import PlannerReActFlow
-from app.domain.services.tools.A2ATool import A2ATool
+from app.domain.services.tools.a2a import A2ATool
 from app.domain.services.tools.mcp import MCPTool
 
 logger = logging.getLogger(__name__)

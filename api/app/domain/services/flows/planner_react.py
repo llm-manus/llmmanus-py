@@ -8,8 +8,6 @@
 import logging
 from typing import AsyncGenerator, Optional
 
-from sqlalchemy.dialects.mysql import insert
-
 from app.domain.external.browser import Browser
 from app.domain.external.json_parser import JSONParser
 from app.domain.external.llm import LLM
@@ -24,7 +22,7 @@ from app.domain.repositories.session_repository import SessionRepository
 from app.domain.services.agents.planner import PlannerAgent
 from app.domain.services.agents.react import ReActAgent
 from app.domain.services.flows.base import BaseFlow, FlowStatus
-from app.domain.services.tools.A2ATool import A2ATool
+from app.domain.services.tools.a2a import A2ATool
 from app.domain.services.tools.browser import BrowserTool
 from app.domain.services.tools.file import FileTool
 from app.domain.services.tools.mcp import MCPTool
