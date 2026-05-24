@@ -56,3 +56,8 @@ class SessionService:
         async with self._uow:
             await self._uow.session.delete_by_id(session_id)
         logging.info(f"删除会话[{session_id}]成功")
+
+    async def get_session(self, session_id: str) -> Session:
+        """获取指定会话详情信息"""
+        async with self._uow:
+            return await self._uow.session.get_by_id(session_id)

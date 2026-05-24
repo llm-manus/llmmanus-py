@@ -11,6 +11,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 from app.domain.models.session import SessionStatus
+from app.interfaces.schemas.event import AgentSSEEvent
 
 
 class CreateSessionResponse(BaseModel):
@@ -36,3 +37,10 @@ class ChatRequest(BaseModel):
     attachments: Optional[List[str]] = Field(default_factory=list) # 附件列表，传递的是文件id列表
     event_id: Optional[str] = None # 最新事件id
     timestamp: Optional[int] = None # 当前时间戳
+
+class GetSessionResponse(BaseModel):
+    """获取会话详情响应结构"""
+    session_id: str
+    title: Optional[str] = None
+    status: SessionStatus
+    events: List[AgentSSEEvent] = Field(default_factory=list)

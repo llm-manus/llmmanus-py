@@ -160,7 +160,7 @@ class AgentService:
                     await self._uow.session.update_latest_message(
                         session_id=session_id,
                         message=message,
-                        timestamp=timestamp,
+                        timestamp=timestamp or datetime.now(),
                     )
 
                 # 7.创建一个人类消息事件
