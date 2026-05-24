@@ -232,7 +232,7 @@ async def get_session_files(
 @router.post(
     path="/{session_id}/file",
     response_model=Response[FileReadResponse],
-    summary="查看回话沙箱中指定文件的内容",
+    summary="会看回话沙箱中指定文件的内容",
     description="根据传递的会话id+文件路径查看沙箱中文件的内容信息"
 )
 async def read_file(
@@ -292,7 +292,7 @@ async def vnc_websocket(
     try:
         # 4.获取对应会话的vnc链接
         sandbox_vnc_url = await session_service.get_vnc_url(session_id)
-        logger.info(f"连接WebSocket VNC：{sandbox_vnc_url}")
+        logger.info(f"连接WebSocket VNC： {sandbox_vnc_url}")
 
         # 5.创建上下文并连接到vnc
         async with websockets.connect(sandbox_vnc_url) as sandbox_ws:
@@ -306,39 +306,38 @@ async def vnc_websocket(
                 except WebSocketDisconnect:
                     logger.info(f"Web->VNC连接终端")
                 except Exception as forward_e:
-                    logger.error(f"forward_to_sandbox出错：{forward_e}")
+                    logger.error(f"forward_to_sandbox出错: {str(forward_e)}")
 
-        async def forward_from_sandbox():
-            try:
-                while True:
-                    # 接受来自沙箱的数据并转发
-                    data = await sandbox_ws.recv()
-                    await websocket.send_bytes(data)
-            except ConnectionClosed:
-                logger.info(f"VNC->Web连接失败")
-            except Exception as forward_e:
-                logger.error(f"forward_from_sandbox出错：{str(forward_e)}")
+            async def forward_from_sandbox():
+                try:
+                    while True:
+                        # 接收来自沙箱的数据并转发
+                        data = await sandbox_ws.recv()
+                        await websocket.send_bytes(data)
+                except ConnectionClosed:
+                    logger.info("VNC->Web连接关闭")
+                except Exception as forward_e:
+                    logger.error(f"forward_from_sandbox出错: {str(forward_e)}")
 
-        # 7.并行运行两个任务
-        forward_task1 = asyncio.create_task(forward_to_sandbox())
-        forward_task2 = asyncio.create_task(forward_from_sandbox())
+            # 7.并行运行两个任务
+            forward_task1 = asyncio.create_task(forward_to_sandbox())
+            forward_task2 = asyncio.create_task(forward_from_sandbox())
 
-        # 8.等待任意任务结束意味WebSocket连接终端
-        done, pending = await asyncio.wait(
-            [forward_task1, forward_task2],
-            return_when=asyncio.FIRST_COMPLETED
-        )
-        logger.info("WebSocket连接已关闭")
+            # 8.等待任意任务结束意味WebSocket连接终端
+            done, pending = await asyncio.wait(
+                [forward_task1, forward_task2],
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+            logger.info("WebSocket连接已关闭")
 
-        # 9.如果任意任务完成则取消其他任务(关闭全部链接)
-        for task in pending:
-            task.cancel()
-    except ServerRequestsError as connection_e:
-        # 连续沙箱环境失败，关闭websocket
-        logger.error(f"连接沙箱环境失败：{str(connection_e)}")
-        await websocket.close(code=1011, reason=f"连接沙箱环境失败：{str(connection_e)}")
+            # 9.如果任意任务完成则取消其他任务(关闭全部链接)
+            for task in pending:
+                task.cancel()
+    except ConnectionError as connection_e:
+        # 连接沙箱环境失败，关闭websocket
+        logger.error(f"连接沙箱环境失败: {str(connection_e)}")
+        await websocket.close(code=1011, reason=f"连接沙箱环境失败: {str(connection_e)}")
     except Exception as e:
         # 其他错误记录日志并关闭websocket
-        logger.error(f"WebSocket异常：{str(e)}")
-        await websocket.close(code=1011, reason=f"WebSocket异常：{str(e)}")
-
+        logger.error(f"WebSocket异常: {str(e)}")
+        await websocket.close(code=1011, reason=f"WebSocket异常: {str(e)}")
