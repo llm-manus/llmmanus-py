@@ -9,16 +9,16 @@ import asyncio
 import logging
 import uuid
 from abc import ABC
-from typing import Optional, List, AsyncGenerator, Dict, Any
+from typing import Optional, List, AsyncGenerator, Dict, Any, Callable
 
 from app.domain.external.json_parser import JSONParser
 from app.domain.external.llm import LLM
 from app.domain.models.app_config import AgentConfig
-from app.domain.models.event import Event, ToolEvent, ToolEventStatus, ErrorEvent, MessageEvent
+from app.domain.models.event import ToolEvent, ToolEventStatus, ErrorEvent, MessageEvent, BaseEvent
 from app.domain.models.memory import Memory
 from app.domain.models.message import Message
 from app.domain.models.tool_result import ToolResult
-from app.domain.repositories.session_repository import SessionRepository
+from app.domain.repositories.uow import IUnitOfWork
 from app.domain.services.tools.base import BaseTool
 
 logger = logging.getLogger(__name__)
@@ -34,16 +34,17 @@ class BaseAgent(ABC):
 
     def __init__(
             self,
+            uow_factory: Callable[[], IUnitOfWork],
             session_id: str, # 会话id
-            session_repository: SessionRepository, # 会话数据仓库
             agent_config: AgentConfig,  # Agent配置
             llm: LLM,  # 语言模型协议
             json_parser: JSONParser,  # JSON输出解释器
             tools: List[BaseTool],  # 工具列表
     ) -> None:
         """构造函数，完成Agent的初始化"""
+        self._uow_factory = uow_factory
+        self._uow = uow_factory()
         self._session_id = session_id
-        self._session_repository = session_repository
         self._agent_config = agent_config
         self._llm = llm
         self._memory: Optional[Memory] = None
@@ -53,7 +54,8 @@ class BaseAgent(ABC):
     async def _ensure_memory(self) -> None:
         """确保智能体记忆是存在的"""
         if self._memory is None:
-            self._memory = await self._session_repository.get_memory(self._session_id, self.name)
+            async with self._uow:
+                self._memory = await self._uow.session.get_memory(self._session_id, self.name)
 
     def _get_available_tools(self) -> List[Dict[str, Any]]:
         """获取Agent所有可用的工具列表参数申明/Schema"""
@@ -80,7 +82,8 @@ class BaseAgent(ABC):
         # 2.组装语言模型的响应格式
         response_format = {"type": format} if format else None
 
-        # 3.循环向LLM发起提问知道最大重试次数
+        # 3.循环向LLM发起提问直到最大重试次数
+        error = "调用语言模型发生错误"
         for _ in range(self._agent_config.max_retries):
             try:
                 # 4.调用语言模型获取响应内容
@@ -102,7 +105,7 @@ class BaseAgent(ABC):
                         await asyncio.sleep(self._retry_interval)
                         continue
 
-                    # 6.取出非空消息并处理工具调用(兼容deepseek思考模型的写法)
+                    # 6.取出非空消息并处理工具调用(兼容DeepSeek思考模型的写法)
                     filtered_message = {"role": "assistant", "content": message.get("content")}
                     if message.get("reasoning_content"):
                         filtered_message["reasoning_content"] = message.get("reasoning_content")
@@ -110,28 +113,33 @@ class BaseAgent(ABC):
                         # 7.取出工具调用的数据，限制LLM一次只能调用工具
                         filtered_message["tool_calls"] = message.get("tool_calls")[:1]
                 else:
-                    # 8.非AI消息则基类并存储message
-                    logger.warning(f"LLM响应内容无法确认消息角色：{message.get('role')}")
+                    # 8.非AI消息则记录日志并存储message
+                    logger.warning(f"LLM响应内容无法确认消息角色: {message.get('role')}")
                     filtered_message = message
 
-                # 9.将消息添加到记忆
+                # 9.将消息添加到记忆中
                 await self._add_to_memory([filtered_message])
                 return filtered_message
             except Exception as e:
-                # 10.记录日志并睡眠制定的时间
-                logger.error(f"调用语言模型发生错误：{str(e)}")
+                # 10.记录日志并睡眠指定的时间
+                logger.error(f"调用语言模型发生错误: {str(e)}")
+                error = str(e)
                 await asyncio.sleep(self._retry_interval)
                 continue
+
+        # 11.所有重试均已耗尽仍未获得有效响应，抛出异常避免返回None
+        raise RuntimeError(f"调用语言模型失败, 已达到最大重试次数({self._agent_config.max_retries}): {error}")
 
     async def _invoke_tool(self, tool: BaseTool, tool_name: str, arguments: Dict[str, Any]) -> ToolResult:
         """传递工具包+工具名字+对应参数调用指定工具"""
         # 1.执行循环调用工具获取结果
+        err = ""
         for _ in range(self._agent_config.max_retries):
             try:
-                return await tool.invoke(tool_name=tool_name, **arguments)
+                return await tool.invoke(tool_name, **arguments)
             except Exception as e:
                 err = str(e)
-                logger.exception(f"调用工具[{tool_name}]出错，错误: {str(e)}")
+                logger.exception(f"调用工具[{tool_name}]出错, 错误: {str(e)}")
                 await asyncio.sleep(self._retry_interval)
                 continue
 
@@ -154,13 +162,15 @@ class BaseAgent(ABC):
         self._memory.add_messages(messages)
 
         # 4.将记忆持久化到数据仓库中
-        await self._session_repository.save_memory(self._session_id, self.name, self._memory)
+        async with self._uow:
+            await self._uow.session.save_memory(self._session_id, self.name, self._memory)
 
     async def compact_memory(self) -> None:
         """压缩Agent的记忆"""
         await self._ensure_memory()
         self._memory.compact()
-        await self._session_repository.save_memory(self._session_id, self.name, self._memory)
+        async with self._uow:
+            await self._uow.session.save_memory(self._session_id, self.name, self._memory)
 
     async def roll_back(self, message: Message) -> None:
         """Agent的状态回滚，该函数用于确保Agent的消息列表状态是正确，用于发送新消息、暂停/停止任务、通知用户"""
@@ -194,10 +204,11 @@ class BaseAgent(ABC):
             self._memory.roll_back()
 
         # 6.将记忆持久化
-        await self._session_repository.save_memory(self._session_id, self.name, self._memory)
+        async with self._uow:
+            await self._uow.session.save_memory(self._session_id, self.name, self._memory)
 
-    async def invoke(self, query: str, format: Optional[str] = None) -> AsyncGenerator[Event, None]:
-        """传递消息+响应格式调用层序生成异步迭代内容"""
+    async def invoke(self, query: str, format: Optional[str] = None) -> AsyncGenerator[BaseEvent, None]:
+        """传递消息+响应格式调用程序生成异步迭代内容"""
         # 1.需要判断下是否传递了format
         format = format if format else self._format
 
@@ -209,8 +220,8 @@ class BaseAgent(ABC):
 
         # 3.循环遍历直到最大迭代次数
         for _ in range(self._agent_config.max_iterations):
-            # 4.如果响应内容物工具调用则表示LLM生成了文本回答，这时候就是最终答案
-            if not message.get("tool_calls"):
+            # 4.如果LLM响应为空或无工具调用则表示LLM生成了文本回答，这时候就是最终答案
+            if not message or not message.get("tool_calls"):
                 break
 
             # 5.循环遍历工具参数并执行
@@ -224,7 +235,7 @@ class BaseAgent(ABC):
                 function_name = tool_call["function"]["name"]
                 function_args = await self._json_parser.invoke(tool_call["function"]["arguments"])
 
-                # 7.取出Agent对应的工具
+                # 7.取出Agent中对应的工具
                 tool = self._get_tool(function_name)
 
                 # 8.返回工具即将调用事件，其中tool_content比较特殊，需要在具体业务中进行实现，这里留空即可
@@ -259,10 +270,12 @@ class BaseAgent(ABC):
 
             # 12.所有工具都执行完成后，调用LLM获取汇总消息二次提供
             message = await self._invoke_llm(tool_messages)
-
         else:
             # 13.超过最大迭代次数后，则抛出错误
-            yield ErrorEvent(error=f"Agent迭代超过最大迭代次数：{self._agent_config.max_iterations}，任务处理失败")
+            yield ErrorEvent(error=f"Agent迭代超过最大迭代次数: {self._agent_config.max_iterations}, 任务处理失败")
 
         # 14.在指定步骤内完成了迭代则返回消息事件
-        yield MessageEvent(message=message["content"])
+        if message and message.get("content") is not None:
+            yield MessageEvent(message=message["content"])
+        else:
+            yield ErrorEvent(error="Agent未能生成有效回复内容")

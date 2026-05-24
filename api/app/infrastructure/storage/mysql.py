@@ -94,7 +94,6 @@ async def get_db_session() -> AsyncSession:
     async with session_factory() as session:
         try:
             yield session
-            await session.commit()
         except Exception as _:
             await session.rollback()
             raise

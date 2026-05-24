@@ -9,7 +9,7 @@ import logging
 from typing import AsyncGenerator
 
 from app.domain.models.event import Event, StepEventStatus, StepEvent, ToolEvent, MessageEvent, ErrorEvent, \
-    ToolEventStatus, WaitEvent
+    ToolEventStatus, WaitEvent, BaseEvent
 from app.domain.models.file import File
 from app.domain.models.message import Message
 from app.domain.models.plan import Plan, Step, ExecutionStatus
@@ -26,7 +26,7 @@ class ReActAgent(BaseAgent):
     _system_prompt: str = SYSTEM_PROMPT + REACT_SYSTEM_PROMPT
     _format: str = "json_object"  # format控制的是content、工具调用控制的是tool_calls两者不冲突
 
-    async def execute_step(self, plan: Plan, step: Step, message: Message) -> AsyncGenerator[Event, None]:
+    async def execute_step(self, plan: Plan, step: Step, message: Message) -> AsyncGenerator[BaseEvent, None]:
         """根据传递的消息+规划+子步骤，执行相应的子步骤"""
         # 1.根据传递的内容生成执行消息
         query = EXECUTION_PROMPT.format(
@@ -42,11 +42,11 @@ class ReActAgent(BaseAgent):
 
         # 3.调用invoke获取agent返回的事件内容
         async for event in self.invoke(query):
-            # 4.判断事件类型执行不同的操作
+            # 4.判断事件类型执行不同操作
             if isinstance(event, ToolEvent):
                 # 5.工具事件需要判断工具的名称是否为message_ask_user
                 if event.function_name == "message_ask_user":
-                    # 6.工具如果在调用中，我们需要返回一条消息告知用户要让用户处理什么
+                    # 6.工具如果在调用中，我们需要返回一条消息告知用户需要让用户处理什么
                     if event.status == ToolEventStatus.CALLING:
                         yield MessageEvent(
                             role="assistant",
@@ -73,9 +73,10 @@ class ReActAgent(BaseAgent):
                 # 11.返回步骤完成事件
                 yield StepEvent(step=step, status=StepEventStatus.COMPLETED)
 
-                # 12.如果子步骤拿到了结果，还续页返回一段消息给用户(将结果返回给用户)
+                # 12.如果子步骤拿到了结果，还需要返回一段消息给用户(将结果返回给用户)
                 if step.result:
                     yield MessageEvent(role="assistant", message=step.result)
+                continue
             elif isinstance(event, ErrorEvent):
                 # 13.错误事件更新步骤的状态
                 step.status = ExecutionStatus.FAILED
