@@ -16,12 +16,13 @@ from fastapi import APIRouter
 from sse_starlette import EventSourceResponse, ServerSentEvent
 
 from app.application.errors.exception import NotFoundError
+from app.application.services import session_service
 from app.application.services.agent_service import AgentService
 from app.application.services.session_service import SessionService
 from app.interfaces.schemas import Response
 from app.interfaces.schemas.event import EventMapper
 from app.interfaces.schemas.session import CreateSessionResponse, ListSessionResponse, ListSessionItem, ChatRequest, \
-    GetSessionResponse
+    GetSessionResponse, GetSessionFilesResponse
 from app.interfaces.service_dependencies import get_session_service, get_agent_service
 
 logger = logging.getLogger(__name__)
@@ -208,3 +209,20 @@ async def stop_session(
     """根据传递的指定会话id对应任务会话"""
     await agent_service.stop_session(session_id)
     return Response.success(msg="停止任务会话成功")
+
+@router.get(
+    path="{session_id}/files",
+    response_model=Response[GetSessionFilesResponse],
+    summary="获取指定会话文件列表信息",
+    description="获取指定会话文件列表信息"
+)
+async def get_session_files(
+        session_id: str,
+        session_service: SessionService = Depends(get_session_service),
+) -> Response[GetSessionFilesResponse]:
+    """获取指定会话文件列表信息"""
+    files = await session_service.get_session_files(session_id)
+    return Response.success(
+        msg="获取会话文件列表成功",
+        data=GetSessionFilesResponse(files=files)
+    )

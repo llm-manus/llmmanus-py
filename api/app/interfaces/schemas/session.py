@@ -10,6 +10,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+from app.domain.models.file import File
 from app.domain.models.session import SessionStatus
 from app.interfaces.schemas.event import AgentSSEEvent
 
@@ -44,3 +45,7 @@ class GetSessionResponse(BaseModel):
     title: Optional[str] = None
     status: SessionStatus
     events: List[AgentSSEEvent] = Field(default_factory=list)
+
+class GetSessionFilesResponse(BaseModel):
+    """获取会话文件列表响应结构"""
+    files: List[File] = Field(default_factory=list)
