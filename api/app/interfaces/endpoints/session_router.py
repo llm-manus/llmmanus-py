@@ -194,3 +194,17 @@ async def get_session(
             events=EventMapper.events_to_sse_events(session.events),
         )
     )
+
+@router.post(
+    path="{session_id}/stop",
+    response_model=Response[Optional[Dict]],
+    summary="停止指定任务会话",
+    description="根据传递的指定会话id停止对应任务会话",
+)
+async def stop_session(
+        session_id: str,
+        agent_service: AgentService = Depends(get_agent_service),
+) -> Response[Optional[Dict]]:
+    """根据传递的指定会话id对应任务会话"""
+    await agent_service.stop_session(session_id)
+    return Response.success(msg="停止任务会话成功")

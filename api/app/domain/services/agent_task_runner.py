@@ -391,6 +391,7 @@ class AgentTaskRunner(TaskRunner):
             await self._put_and_add_event(task, DoneEvent())
             async with self._uow:
                 await self._uow.session.update_status(self._session_id, SessionStatus.COMPLETED)
+            raise
         except Exception as e:
             # 14.记录日志并往任务队列/消息队列中写入异常事件并更新会话状态
             logger.exception(f"AgentTaskRunner运行出错：{str(e)}")
