@@ -5,6 +5,7 @@
 #Author  :Emcikem
 @File    :main.py
 """
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -17,6 +18,7 @@ from app.infrastructure.storage.mysql import get_mysql
 from app.infrastructure.storage.redis import get_redis
 from app.interfaces.endpoints.routes import router
 from app.interfaces.errors.exception_handlers import register_exception_handlers
+from app.interfaces.service_dependencies import get_agent_service
 from core.config import get_settings
 
 # 1.加载配置信息
@@ -47,9 +49,19 @@ async def lifespan(app: FastAPI):
     await get_cos().init()
 
     try:
-        # 4.lifespan节点/分界
+        # 3.lifespan节点/分界
         yield
     finally:
+        try:
+            # 4.等待agent服务关闭
+            logger.info("Manus正在关闭")
+            await asyncio.wait_for(get_agent_service().shutdown(), timeout=30.0)
+            logger.info("Agent服务成功关闭")
+        except asyncio.TimeoutError:
+            logger.warning("Agent服务关闭超时，强制关闭，不发任务将被释放")
+        except Exception as e:
+            logger.error(f"Agent服务关闭期间出现错误：{str(e)}")
+
         # 5.应用关闭时执行
         await get_redis().shutdown()
         await get_mysql().shutdown()
