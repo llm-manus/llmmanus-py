@@ -28,7 +28,7 @@ from app.interfaces.schemas.session import CreateSessionResponse, ListSessionRes
 from app.interfaces.service_dependencies import get_session_service, get_agent_service
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/session", tags=["会话模块"])
+router = APIRouter(prefix="/sessions", tags=["会话模块"])
 
 # 流式获取会话详情睡眠间隔
 SESSION_SLEEP_INTERVAL = 5
