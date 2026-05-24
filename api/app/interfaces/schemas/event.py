@@ -5,19 +5,20 @@
 #Author  :Emcikem
 @File    :event.py
 """
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional, Any, Dict, Self, Type, Literal, List, Union, get_args
 
 from pydantic import BaseModel, Field, ConfigDict
 
-from app.domain.models.event import Event, StepEvent, PlanEvent, ToolEventStatus, ToolEvent, WaitEvent
+from app.domain.models.event import Event, PlanEvent, ToolEventStatus, ToolEvent, StepEvent
 from app.domain.models.file import File
 from app.domain.models.plan import ExecutionStatus
 
 
 class BaseEventData(BaseModel):
     """基础事件数据"""
-    event_id: Optional[str] = None # 事件id
+    id: Optional[str] = None # 事件id
     created_at: datetime = Field(default_factory=datetime.now) # 事件时间
 
     # pydantic v2写法，序列化时将datetime转换为时间戳
@@ -29,7 +30,7 @@ class BaseEventData(BaseModel):
     def base_event_data(cls, event: Event) -> Dict[str, Any]:
         """类方法，用于将事件Domain模型转换成基础事件数据字典"""
         return {
-            "event_id": event.event_id,
+            "event_id": event.id,
             "created_at": int(event.created_at.timestamp()),
         }
 
@@ -43,14 +44,14 @@ class BaseEventData(BaseModel):
 
 class BaseSSEEvent(BaseModel):
     """基础流式事件数据类型"""
-    event: str # 事件类型
-    data: BaseEventData # 数据
+    event: str  # 事件类型
+    data: BaseEventData  # 数据
 
     @classmethod
     def from_event(cls, event: Event) -> Self:
         """将事件Domain模型转换成基础流式事件"""
-        # 1.获取事件数据类型，如果没有则使用基础事件数据BaseEventData
-        data_class = Type[BaseEventData] = cls.__annotations__.get("data", BaseEventData)
+        # 1.获取事件数据的类型，如果没有则使用基础事件数据BaseEventData
+        data_class: Type[BaseEventData] = cls.__annotations__.get("data", BaseEventData)
 
         # 2.调用构造函数完成初始化
         return cls(
@@ -78,6 +79,7 @@ class MessageEventData(BaseEventData):
     message: str = ""
     attachments: List[File] = Field(default_factory=list)
 
+
 class MessageSSEEvent(BaseSSEEvent):
     """流式消息事件数据响应结构"""
     event: Literal["message"] = "message"
@@ -90,7 +92,7 @@ class MessageSSEEvent(BaseSSEEvent):
                 **BaseEventData.base_event_data(event),
                 role=event.role,
                 message=event.message,
-                attachments=event.attachments
+                attachments=event.attachments,
             )
         )
 
@@ -98,25 +100,40 @@ class TitleEventData(BaseEventData):
     """标题事件数据"""
     title: str
 
+
 class TitleSSEEvent(BaseSSEEvent):
     """标题流式事件"""
     event: Literal["title"] = "title"
     data: TitleEventData
 
+
 class StepEventData(BaseEventData):
     """步骤事件数据"""
-    event_id: str # 步骤id
+    id: str # 步骤id
     status: ExecutionStatus # 步骤执行状态
     description: str # 步骤描述
+
 
 class StepSSEEvent(BaseSSEEvent):
     """步骤流式事件"""
     event: Literal["step"] = "step"
     data: StepEventData
 
+    @classmethod
+    def from_event(cls, event: StepEvent) -> Self:
+        return cls(
+            data=StepEventData(
+                **BaseEventData.base_event_data(event),
+                status=event.step.status,
+                id=event.step.id,
+                description=event.step.description
+            )
+        )
+
 class PlanEventData(BaseEventData):
     """计划事件数据"""
     steps: List[StepEventData]
+
 
 class PlanSSEEvent(BaseSSEEvent):
     """计划流式事件"""
@@ -133,21 +150,23 @@ class PlanSSEEvent(BaseSSEEvent):
                         **BaseEventData.base_event_data(event),
                         id=step.id,
                         status=step.status,
-                        description=step.description
+                        description=step.description,
                     )
                     for step in event.plan.steps
                 ]
             )
         )
 
+
 class ToolEventData(BaseEventData):
     """工具事件数据"""
-    tool_call_id: str # 工具调用id
-    name: str # 工具箱名字
-    status: ToolEventStatus # 工具状态
-    function: str # 工具名字
-    args: Dict[str, Any] # 工具参数
-    content: Optional[Any] = None
+    tool_call_id: str  # 工具调用id
+    name: str  # 工具箱名字
+    status: ToolEventStatus  # 工具状态
+    function: str  # 工具名字
+    args: Dict[str, Any]  # 工具参数
+    content: Optional[Any] = None  # 工具调用结果
+
 
 class ToolSSEEvent(BaseSSEEvent):
     """工具流式事件"""
@@ -164,13 +183,14 @@ class ToolSSEEvent(BaseSSEEvent):
                 status=event.status,
                 function=event.function_name,
                 args=event.function_args,
-                content=event.function_result,
+                content=event.tool_content,
             )
         )
 
 class DoneSSEEvent(BaseSSEEvent):
     """停止流式输入流式事件"""
     event: Literal["done"] = "done"
+
 
 class WaitSSEEvent(BaseSSEEvent):
     """等待人类流式输入流式事件"""
@@ -181,10 +201,12 @@ class ErrorEventData(BaseSSEEvent):
     """错误事件数据"""
     error: str
 
+
 class ErrorSSEEvent(BaseSSEEvent):
     """错误流式事件"""
     event: Literal["error"] = "error"
     data: ErrorEventData
+
 
 # 定义Agent流式事件类型集合
 AgentSSEEvent = Union[
@@ -205,10 +227,16 @@ class EventMapping:
     data_class: Type[BaseSSEEvent]
     event_type: str
 
+@dataclass
+class EventMapping:
+    """事件映射数据类，用于存储事件映射信息，涵盖流式事件类型、数据类、事件类型字符串"""
+    sse_event_class: Type[BaseSSEEvent]
+    data_class: Type[BaseEventData]
+    event_type: str
 
 class EventMapper:
     """事件映射类，利用Python自身提供的自省机制，将业务逻辑中的Event转换成适合流式传输的AgentSSEEvent"""
-    # 缓存映射（type：EventMapping）
+    # 缓存映射(type: EventMapping)
     _cache_mapping: Optional[Dict[str, EventMapping]] = None
 
     @staticmethod
@@ -222,10 +250,10 @@ class EventMapper:
         sse_event_classes = get_args(AgentSSEEvent)
         mapping = {}
 
-        # 3.循环遍历AgentSSEEvent肯呢个的所有类逐个遍历
+        # 3.循环遍历AgentSSEEvent可能的所有类逐个处理
         for sse_event_class in sse_event_classes:
             # 4.跳过基类
-            if sse_event_class in sse_event_classes:
+            if sse_event_class == BaseSSEEvent:
                 continue
 
             # 5.检查类是否包含event属性
@@ -233,9 +261,9 @@ class EventMapper:
                 # 6.提取事件字段
                 event_field = sse_event_class.__annotations__["event"]
 
-                # 7.提取事件的具体指(Literal的值)
-                if hasattr(event_field, "__agrs__") and len(event_field.__agrs__) > 0:
-                    event_type = event_field.__agrs__[0]
+                # 7.提取事件的具体值(Literal的值)
+                if hasattr(event_field, "__args__") and len(event_field.__args__) > 0:
+                    event_type = event_field.__args__[0]
 
                     # 8.提取sse的载荷数据
                     data_class = None
@@ -253,7 +281,6 @@ class EventMapper:
         EventMapper._cache_mapping = mapping
         return mapping
 
-
     @staticmethod
     def event_to_sse_event(event: Event) -> AgentSSEEvent:
         """将领域事件转换为Agent流式事件模型"""
@@ -263,7 +290,7 @@ class EventMapper:
         # 2.根据传递进来的事件获取映射类
         event_mapping = event_type_mapping.get(event.type)
 
-        # 3.如果招到了类型映射则进行转换
+        # 3.如果找到了类型映射则进行转换
         if event_mapping:
             sse_event = event_mapping.sse_event_class.from_event(event)
             return sse_event
@@ -273,7 +300,7 @@ class EventMapper:
 
     @staticmethod
     def events_to_sse_events(events: List[Event]) -> List[AgentSSEEvent]:
-        """将领域事件模型列表转换为SSE流式事件类型"""
+        """将领域事件模型列表转换为SSE流式事件列表"""
         return list(filter(lambda x: x is not None, [
             EventMapper.event_to_sse_event(event) for event in events
         ]))

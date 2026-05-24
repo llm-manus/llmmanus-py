@@ -9,7 +9,7 @@ import asyncio
 import io
 import logging
 import uuid
-from typing import List, AsyncGenerator, Callable
+from typing import List, AsyncGenerator, Callable, BinaryIO
 
 from fastapi import UploadFile
 from pydantic import TypeAdapter
@@ -154,6 +154,22 @@ class AgentTaskRunner(TaskRunner):
         except Exception as e:
             logger.exception(f"AgentTaskRunner同步消息附件到沙箱失败: {str(e)}")
 
+    @classmethod
+    def _get_stream_size(cls, f: BinaryIO) -> int:
+        """根据传递的文件流，获取计算文件的大小"""
+        # 1.记录当且文件指针位置
+        current_pos = f.tell()
+
+        # 2.将指针移动到文件末尾，seek，0：偏移量、2：相对文件末尾
+        f.seek(0, 2)
+
+        # 3.获取当前位置，也就是文件大小
+        size = f.tell()
+
+        # 4.恢复指针到原始位置
+        f.seek(current_pos)
+
+        return size
 
     async def _sync_file_to_storage(self, filepath: str) -> File:
         """将沙箱中指定的文件路径数据同步到存储桶中"""
@@ -171,9 +187,12 @@ class AgentTaskRunner(TaskRunner):
                     await self._uow.session.remove_file(self._session_id, file.filepath)
 
             # 4.提取文件名字、文件信息并更新文件路径
-            # todo: upload_file.content_type类型需要确认是否可以不填写
             filename = filepath.split("/")[-1]
-            upload_file = UploadFile(file=file_data, filename=filename)
+            upload_file = UploadFile(
+                file=file_data,
+                filename=filename,
+                size=self._get_stream_size(file_data),
+            )
 
             # 5.上传文件到文件存储桶
             file = await self._file_storage.upload_file(upload_file)

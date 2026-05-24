@@ -17,6 +17,7 @@ from sse_starlette import EventSourceResponse, ServerSentEvent
 from app.application.services.agent_service import AgentService
 from app.application.services.session_service import SessionService
 from app.interfaces.schemas import Response
+from app.interfaces.schemas.event import EventMapper
 from app.interfaces.schemas.session import CreateSessionResponse, ListSessionResponse, ListSessionItem, ChatRequest
 from app.interfaces.service_dependencies import get_session_service, get_agent_service
 
@@ -117,7 +118,11 @@ async def chat(
             timestamp=datetime.fromtimestamp(request.timestamp) if request.timestamp else None,
         ):
             # 2.将Agent事件转换为sse数据（因为普通的event没法提供流式事件传输）
-            # todo 统一
-            yield ServerSentEvent(event=event.type, data=event.model_dump_json())
+            sse_event = EventMapper.event_to_sse_event(event)
+            if sse_event:
+                yield ServerSentEvent(
+                    event=sse_event.type,
+                    data=sse_event.data.model_dump_json()
+                )
 
     return EventSourceResponse(event_generator())
