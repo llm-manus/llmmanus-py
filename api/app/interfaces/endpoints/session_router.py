@@ -18,7 +18,7 @@ from h11 import ConnectionClosed
 from sse_starlette import EventSourceResponse, ServerSentEvent
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
-from app.application.errors.exception import NotFoundError, ServerRequestsError
+from app.application.errors.exception import NotFoundError
 from app.application.services.agent_service import AgentService
 from app.application.services.session_service import SessionService
 from app.interfaces.schemas import Response
@@ -82,7 +82,7 @@ async def stream_session(
             data=ListSessionResponse(sessions=session_items).model_dump_json(),
         )
 
-        # 4.睡眠制定事件避免高频返回
+        # 4.睡眠指定事件避免高频返回
         await asyncio.sleep(SESSION_SLEEP_INTERVAL)
 
     return EventSourceResponse(event_generator())
