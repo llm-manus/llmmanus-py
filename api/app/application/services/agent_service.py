@@ -106,7 +106,7 @@ class AgentService:
 
         # 6.创建任务Task更新会话中的信息
         task = self._task_cls.create(task_runner=task_runner)
-        session.task_id = task
+        session.task_id = task.id
         await self._session_repository.save(session)
 
         return task

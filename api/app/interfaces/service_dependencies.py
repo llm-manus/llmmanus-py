@@ -16,12 +16,11 @@ from app.application.services.app_config_service import AppConfigService
 from app.application.services.file_service import FileService
 from app.application.services.session_service import SessionService
 from app.application.services.status_service import StatusService
-from app.domain.external.file_storage import FileStorage
-from app.domain.repositories.file_repository import FileRepository
 from app.domain.repositories.session_repository import SessionRepository
 from app.infrastructure.external.file_storage.cos_file_storage import COSFileStorage
 from app.infrastructure.external.health_checker.mysql_health_checker import MysqlHealthChecker
 from app.infrastructure.external.health_checker.redis_health_checker import RedisHealthChecker
+from app.infrastructure.external.llm.openai_llm import OpenAILLM
 from app.infrastructure.repositories.db_file_repository import DBFileRepository
 from app.infrastructure.repositories.file_app_config_repository import FileAppConfigRepository
 from app.infrastructure.storage.cos import Cos, get_cos
@@ -85,5 +84,35 @@ def get_session_service(
     return SessionService(session_repository=session_repository)
 
 @lru_cache()
-def get_agent_service() -> AgentService:
-    return AgentService()
+def get_agent_service(
+        cos: Cos = Depends(get_cos),
+        db_session: AsyncSession = Depends(get_db_session),
+        session_repository: SessionRepository = Depends(get_session_service),
+) -> AgentService:
+    # 1.获取应用配置信息（读取配置需要实时获取，所有不配置缓存）
+    app_config_repository = FileAppConfigRepository(config_path=settings.app_config_filepath)
+    app_config = app_config_repository.load()
+    file_repository = DBFileRepository(db_session=db_session)
+
+    # 2.构建依赖实例
+    llm = OpenAILLM(app_config.llm_config)
+    file_storage = COSFileStorage(
+        bucket=settings.cos_bucket,
+        cos=cos,
+        file_repository=file_repository,
+    )
+
+    # 3.实例Agent服务并返回
+    return AgentService(
+        session_repository=session_repository,
+        llm=llm,
+        agent_config=app_config.agent_config,
+        mcp_config=app_config.mcp_config,
+        a2a_config=app_config.a2a_config,
+        sandbox_cls=app_config.sandbox_cls,
+        task_cls=app_config.task_cls,
+        json_parser=app_config.json_parser,
+        search_engine=app_config.search_engine,
+        file_storage=file_storage,
+        file_repository=file_repository,
+    )
