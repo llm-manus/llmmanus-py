@@ -174,7 +174,7 @@ class PlannerReActFlow(BaseFlow):
 
                 # 20.调用执行Agent执行对应的步骤
                 logger.info(f"Planner&ReAct流开始执行步骤 {step.id}: {step.description[:50]}...")
-                async for event in self.react.execute_step(step.plan, step, message):
+                async for event in self.react.execute_step(self.plan, step, message):
                     yield event
 
                 # 21.压缩执行Agent记忆，避免上下文腐化+消耗大量token

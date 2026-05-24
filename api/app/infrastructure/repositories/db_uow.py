@@ -5,13 +5,17 @@
 #Author  :Emcikem
 @File    :db_uow.py
 """
+import asyncio
 from typing import Optional
 
+import logging
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
 from app.domain.repositories.uow import IUnitOfWork, T
 from .db_file_repository import DBFileRepository
 from .db_session_repository import DBSessionRepository
+
+logger = logging.getLogger(__name__)
 
 class DBUnitOfWork(IUnitOfWork):
     """基于MySQL数据库的UoW实例"""
@@ -42,11 +46,27 @@ class DBUnitOfWork(IUnitOfWork):
 
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """退出上下文时执行的逻辑，如果出现异常则回滚，否则提交"""
+        """退出上下文时执行的逻辑，如果出现异常则回滚，否则提交
+
+        当SSE客户端断开连接时、sse_starlette的cancel scope会取消所有await操作
+        包括此处的commit/rollback/close。如果不妥善处理CancelledError，
+        会导致连接池中的连接处于异常状态，影响后续使用该池的其他任务。
+        """
         try:
             if exc_type:
                 await self.rollback()
             else:
                 await self.commit()
+        except asyncio.CancelledError:
+            # SSE断连等场景下cancel scope取消了commit、rollback操作，
+            # 记录警告单不让异常传播，避免后续close操作也被跳过
+            logger.warning("UoW提交/回滚操作被取消(可能是客户端断开连接)")
+        except Exception as e:
+            logger.warning(f"UoW提交/回滚操作失败：{str(e)}")
         finally:
-            await self.db_session.close()
+            try:
+                await self.db_session.close()
+            except asyncio.CancelledError:
+                logger.warning("UoW关闭数据库会话被取消(可能是客户端断开连接)")
+            except Exception as e:
+                logger.warning(f"UoW关闭数据库会话失败：{str(e)}")

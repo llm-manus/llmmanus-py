@@ -30,8 +30,6 @@ from app.domain.models.message import Message
 from app.domain.models.search import SearchResults
 from app.domain.models.session import SessionStatus
 from app.domain.models.tool_result import ToolResult
-from app.domain.repositories.file_repository import FileRepository
-from app.domain.repositories.session_repository import SessionRepository
 from app.domain.repositories.uow import IUnitOfWork
 from app.domain.services.flows.planner_react import PlannerReActFlow
 from app.domain.services.tools.a2a import A2ATool
@@ -326,6 +324,23 @@ class AgentTaskRunner(TaskRunner):
             # 5.将事件直接返回
             yield event
 
+    async def _cleanup_tools(self) -> None:
+        """清理MCP和A2A工具资源，确保在同一任务上文中释放
+
+        注意：该方法必须在初始化MCP/A2A的同一个asyncio Task中调用
+        否则anyio的cancel scope会检测到任务上下文切换并抛出RuntimeError。
+        """
+        try:
+            if self._mcp_tool:
+                await self._mcp_tool.cleanup()
+        except Exception as e:
+            logger.warning(f"清理MCP工具资源时出错：{str(e)}")
+        try:
+            if self._a2a_tool:
+                await self._a2a_tool.manger.cleanup()
+        except Exception as e:
+            logger.warning(f"清理A2A工具资源时出错：{str(e)}")
+
     async def invoke(self, task: Task) -> None:
         """根据传递的任务传递agent消息队列并运行agent流"""
         try:
@@ -398,6 +413,12 @@ class AgentTaskRunner(TaskRunner):
             await self._put_and_add_event(task, ErrorEvent(error=f"AgentTaskRunner出错：{str(e)}"))
             async with self._uow:
                 await self._uow.session.update_status(self._session_id, SessionStatus.COMPLETED)
+        finally:
+            # 15.在同一个asyncio Task上下文中清理MCP/A2A工具资源
+            # 这是关键：streamablehttp_client内部使用anyio.create_task_group(),
+            # 要求在同一个Task中进入和退出cancel scope，
+            # 所以必须在invoke()的finally块（即初始化MCP的同一个Task）中清理
+            await self._cleanup_tools()
 
 
     async def destroy(self) -> None:
@@ -408,17 +429,10 @@ class AgentTaskRunner(TaskRunner):
             logger.info("销毁AgentTaskRunner中的沙箱环境")
             await self._sandbox.destroy()
 
-        # 2.清除mcp工具
-        if self._mcp_tool:
-            logger.info("销毁AgentTaskRunner中的mcp工具")
-            await self._mcp_tool.cleanup()
-
-        # 3.清除a2a工具
-        if self._a2a_tool:
-            logger.info("销毁AgentTaskRunner中的a2a工具")
-            await self._a2a_tool.manager.cleanup()
+        # 2.清除mcp和a2a工具（幂等操作，如果invoke()中已清理则不会重复执行）
+        await self._cleanup_tools()
 
     async def on_done(self, task: Task) -> None:
-        pass
-
+        """任务结束时执行的回调函数"""
+        logger.info(f"AgentTaskRunner任务执行结束")
 
