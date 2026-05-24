@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+	"a2a-sdk>=1.0.2",
 	"aiomysql>=0.3.2",
 	"async-lru",
 	"beautifulsoup4>=4.14.3",

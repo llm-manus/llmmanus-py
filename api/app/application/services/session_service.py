@@ -127,3 +127,20 @@ class SessionService:
 
         raise ServerRequestsError(result.message)
 
+    async def get_vnc_url(self, session_id: str) -> str:
+        """获取指定会话的vnc链接"""
+        # 1.检查会话是否存在
+        logger.info(f"获取会话[{session_id}]的VNC链接")
+        async with self._uow:
+            session = await self._uow.session.get_by_id(session_id)
+        if not session:
+            raise RuntimeError(f"当前会话不存在[{session_id}]，请核实后重试")
+
+        # 2.根据沙箱id获取沙箱并判断是否存在
+        if not session.sandbox_id:
+            raise NotFoundError("当前会话无沙箱环境")
+        sandbox = await self._sandbox_cls.get(session.sandbox_id)
+        if not sandbox:
+            raise NotFoundError("当前会话沙箱不存在或已销毁")
+
+        return sandbox.vnc_url
