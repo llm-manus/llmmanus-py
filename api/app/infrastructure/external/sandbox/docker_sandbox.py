@@ -16,6 +16,7 @@ import docker
 from async_lru import alru_cache
 
 import httpx
+from docker.errors import NotFound
 from docker.models.resource import Model
 
 from app.domain.external.browser import Browser
@@ -177,23 +178,46 @@ class DockerSandbox(Sandbox):
             return False
 
     @classmethod
-    @alru_cache(maxsize=128, typed=True)
     async def get(cls, id: str) -> Self:
         """根据传递的id获取沙箱实例"""
         # 1.先获取系统配置并判断是否直连沙箱
         settings = get_settings()
         if settings.sandbox_address:
-            ip = await cls._resolve_hostname_to_ip(settings.sandbox_address)
-            return DockerSandbox(ip=ip, container_name=id)
+            try:
+                ip = await cls._resolve_hostname_to_ip(settings.sandbox_address)
+                return DockerSandbox(ip=ip, container_name=id)
+            except Exception as e:
+                logger.error(f"解析沙箱地址失败：{str(e)}")
+                return None
 
-        # 2.场景docker客户端并根据容器名字获取容器
-        docker_client = docker.from_env()
-        container = docker_client.containers.get(id)
-        container.reload()
+        try:
+            # 2.场景docker客户端并根据容器名字获取容器
+            docker_client = docker.from_env()
 
-        # 3.获取容器的ip地址
-        ip = cls._get_container_ip(container)
-        return DockerSandbox(ip=ip, container_name=id)
+            try:
+                # 3.根据ip获取容器
+                container = docker_client.containers.get(id)
+                container.reload()
+
+                # 4.检查容器是否正常运行
+                if container.status != "running":
+                    logger.warning(f"容器存在但未运行，容器名字：{id}")
+                    return None
+
+                # 4.获取容器的ip地址
+                ip = cls._get_container_ip(container)
+                return DockerSandbox(ip=ip, container_name=id)
+            except NotFound:
+                # 5.找不到容器（容器被销毁）
+                logger.warning(f"该容器找不到可能被销毁：{str(id)}")
+                return None
+            finally:
+                # 7.显示关闭docker client
+                docker_client.close()
+        except Exception as e:
+            # 8.其他错误同一捕获
+            logger.error(f"获取沙箱发生位置错误：{str(e)}")
+            return None
 
     async def get_browser(self) -> Browser:
         """获取沙箱中的浏览器实例"""

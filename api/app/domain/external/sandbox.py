@@ -137,6 +137,6 @@ class Sandbox(Protocol):
         ...
 
     @classmethod
-    async def get(cls, id: str) -> Self:
+    async def get(cls, id: str) -> Optional[Self]:
         """类方法，根据传递的id获取沙箱实例"""
         ...

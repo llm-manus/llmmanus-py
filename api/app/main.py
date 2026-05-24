@@ -9,6 +9,8 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
+from alembic import command
+from alembic.config import Config
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -42,6 +44,10 @@ async def lifespan(app: FastAPI):
     """创建FastAPI要用层序生命周期上下文管理"""
     # 1.打印日志表示程序开始了
     logger.info("manus正在初始化")
+
+    # todo: 运行数据库迁移（将数据同步到生产环境）
+    # alembic_cfg = Config("alembic.ini")
+    # command.upgrade(alembic_cfg, "head")
 
     # 2.初始化Redis/MySQL/Cos客户端
     await get_redis().init()

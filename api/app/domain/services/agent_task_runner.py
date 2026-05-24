@@ -34,6 +34,7 @@ from app.domain.repositories.uow import IUnitOfWork
 from app.domain.services.flows.planner_react import PlannerReActFlow
 from app.domain.services.tools.a2a import A2ATool
 from app.domain.services.tools.mcp import MCPTool
+from core.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -232,8 +233,12 @@ class AgentTaskRunner(TaskRunner):
         file = await self._file_storage.upload_file(UploadFile(
             file=io.BytesIO(screenshot),
             filename=f"{str(uuid.uuid4())}.png",
+            size=self._get_stream_size(io.BytesIO(screenshot)),
         ))
-        return file.id
+
+        # 3.获取setting并组装完整URL
+        settings = get_settings()
+        return f"https://{settings.cos_bucket}.cos.{settings.cos_region}.mycloud.com/{file.key}"
 
     async def _handle_tool_event(self, event: ToolEvent) -> None:
         """额外处理工具消息，使其前端交互更友好"""
@@ -257,7 +262,9 @@ class AgentTaskRunner(TaskRunner):
                             event.function_args["session_id"],
                             console=True
                         )
-                        event.tool_content = ShellToolContent(console=shell_result.data.get("console", []))
+                        event.tool_content = ShellToolContent(
+                            console=(shell_result.data or {}).get("console", [])
+                        )
                     else:
                         event.tool_content = ShellToolContent(console="No console")
                 elif event.tool_name == "file":
@@ -265,7 +272,7 @@ class AgentTaskRunner(TaskRunner):
                     if "filepath" in event.function_args:
                         filepath = event.function_args["filepath"]
                         file_read_result = await self._sandbox.read_file(filepath)
-                        file_content: str = file_read_result.get("content", "")
+                        file_content: str = (file_read_result.data or {}).get("content", "")
                         event.tool_content = FileToolContent(content=file_content)
                         await self._sync_file_to_sandbox(filepath)
                     else:
