@@ -55,7 +55,7 @@ class TooManyRequestsError(AppException):
 
 
 class ServerRequestsError(AppException):
-    """请求过多错误（触发限流）"""
+    """请求错误"""
 
     def __init__(self, msg: str = "服务器出现异常请稍后重试"):
         super().__init__(status_code=500, code=500, msg=msg)

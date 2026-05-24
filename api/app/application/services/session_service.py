@@ -6,24 +6,31 @@
 @File    :session_service.py
 """
 import logging
-from typing import List, Callable
+from typing import List, Callable, Type
 
 from sqlalchemy.sql.functions import session_user
 
-from app.application.errors.exception import NotFoundError
+from app.application.errors.exception import NotFoundError, ServerRequestsError
+from app.domain.external.sandbox import Sandbox
 from app.domain.models.file import File
 from app.domain.models.session import Session
 from app.domain.repositories.uow import IUnitOfWork
+from app.interfaces.schemas.session import FileReadResponse, ShellReadResponse
 
-logger = logger.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 class SessionService:
     """会话服务"""
 
-    def __init__(self, uow_factory: Callable[[], IUnitOfWork]) -> None:
+    def __init__(
+            self,
+            uow_factory: Callable[[], IUnitOfWork],
+            sandbox_cls: Type[Sandbox],
+    ) -> None:
         """构造函数，完成会话服务初始化"""
         self._uow_factory = uow_factory
         self._uow = uow_factory()
+        self._sandbox_cls = sandbox_cls
 
     async def create_session(self) -> Session:
         """创建一个空白的新任务会话"""
@@ -73,3 +80,50 @@ class SessionService:
         if not session:
             raise RuntimeError(f"当前会话不存在[{session_id}]，请核实后重试")
         return session.files
+
+    async def read_file(self, session_id: str, filepath: str) -> FileReadResponse:
+        """根据传递的信息查看会话中指定文件的内容"""
+        # 1.检查会话是否存在
+        logger.info(f"获取会话[{session_id}]中的文件内容，文件路径：[{filepath}]")
+        async with self._uow:
+            session = await self._uow.session.get_by_id(session_id)
+        if not session:
+            raise RuntimeError(f"当前会话不存在[{session_id}]，请核实后重试")
+
+        # 2.根据沙箱id获取沙箱并判断是否存在
+        if not session.sandbox_id:
+            raise NotFoundError("当前会话无沙箱环境")
+        sandbox = await self._sandbox_cls.get(session.sandbox_id)
+        if not sandbox:
+            raise NotFoundError("当前会话沙箱不存在或已销毁")
+
+        # 3.调用沙箱读取文件的内容
+        result = await sandbox.read_file(filepath)
+        if result.success:
+            return FileReadResponse(**result.data)
+
+        raise ServerRequestsError(result.message)
+
+    async def read_shell_output(self, session_id: str, shell_session_id: str) -> ShellReadResponse:
+        """根据传递的会话id+Shell会话id获取Shell执行结果"""
+        # 1.检查会话是否存在
+        logger.info(f"获取会话[{session_id}]中的Shell内容输出，Shell标识符：[{shell_session_id}]")
+        async with self._uow:
+            session = await self._uow.session.get_by_id(session_id)
+        if not session:
+            raise RuntimeError(f"当前会话不存在[{session_id}]，请核实后重试")
+
+        # 2.根据沙箱id获取沙箱并判断是否存在
+        if not session.sandbox_id:
+            raise NotFoundError("当前会话无沙箱环境")
+        sandbox = await self._sandbox_cls.get(session.sandbox_id)
+        if not sandbox:
+            raise NotFoundError("当前会话沙箱不存在或已销毁")
+
+        # 3.调用沙箱查看shell内容
+        result = await sandbox.read_shell_output(session_id=shell_session_id, console=True)
+        if result.success:
+            return ShellReadResponse(**result.data)
+
+        raise ServerRequestsError(result.message)
+

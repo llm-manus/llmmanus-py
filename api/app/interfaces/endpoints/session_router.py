@@ -16,13 +16,12 @@ from fastapi import APIRouter
 from sse_starlette import EventSourceResponse, ServerSentEvent
 
 from app.application.errors.exception import NotFoundError
-from app.application.services import session_service
 from app.application.services.agent_service import AgentService
 from app.application.services.session_service import SessionService
 from app.interfaces.schemas import Response
 from app.interfaces.schemas.event import EventMapper
 from app.interfaces.schemas.session import CreateSessionResponse, ListSessionResponse, ListSessionItem, ChatRequest, \
-    GetSessionResponse, GetSessionFilesResponse
+    GetSessionResponse, GetSessionFilesResponse, FileReadRequest, FileReadResponse, ShellReadResponse, ShellReadRequest
 from app.interfaces.service_dependencies import get_session_service, get_agent_service
 
 logger = logging.getLogger(__name__)
@@ -225,4 +224,40 @@ async def get_session_files(
     return Response.success(
         msg="获取会话文件列表成功",
         data=GetSessionFilesResponse(files=files)
+    )
+
+@router.post(
+    path="/{session}/file",
+    response_model=Response[FileReadResponse],
+    summary="查看回话沙箱中指定文件的内容",
+    description="根据传递的会话id+文件路径查看沙箱中文件的内容信息"
+)
+async def read_file(
+        session_id: str,
+        reqeust: FileReadRequest,
+        session_service: SessionService = Depends(get_session_service),
+) -> Response[FileReadResponse]:
+    """根据传递的会话id+文件路径查看沙箱中文件的内容信息"""
+    result = await session_service.read_file(session_id, reqeust.filepath)
+    return Response.success(
+        msg="获取会话文件内容成功",
+        data=result
+    )
+
+@router.post(
+    path="/{session}/shell",
+    response_model=FileReadResponse[ShellReadResponse],
+    summary="查看会话的shell内容输出",
+    description="传递指定会话id与shell会话表示，查看shell内容输出"
+)
+async def read_shell_output(
+        session_id: str,
+        reqeust: ShellReadRequest,
+        session_service: SessionService = Depends(get_session_service),
+) -> Response[ShellReadResponse]:
+    """查看会话的shell内容输出"""
+    result = await session_service.read_shell_output(session_id, reqeust.session_id)
+    return Response.success(
+        msg="获取Shell内容输出结果成功",
+        data=result
     )

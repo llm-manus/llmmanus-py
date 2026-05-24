@@ -49,3 +49,28 @@ class GetSessionResponse(BaseModel):
 class GetSessionFilesResponse(BaseModel):
     """获取会话文件列表响应结构"""
     files: List[File] = Field(default_factory=list)
+
+class FileReadRequest(BaseModel):
+    """需要读取的沙箱文件请求结构"""
+    filepath: str
+
+class FileReadResponse(BaseModel):
+    """需要读取的沙箱文件响应结构体"""
+    filepath: str
+    content: str
+
+class ShellReadRequest(BaseModel):
+    """需要读取的沙箱shell请求结构体"""
+    session_id: str # shell会话id
+
+class ConsoleRecord(BaseModel):
+    """控制台记录模型，包含ps1、command、output"""
+    ps1: str
+    command: str
+    output: str
+
+class ShellReadResponse(BaseModel):
+    """需要读取的沙箱shell响应结构体"""
+    session_id: str
+    output: str
+    console_records: List[ConsoleRecord] = Field(default_factory=list)
