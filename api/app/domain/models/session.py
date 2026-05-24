@@ -41,7 +41,7 @@ class Session(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.now) # 更新时间
     created_at: datetime = Field(default_factory=datetime.now) # 创建时间
 
-    def get_lasted_plan(self) -> Optional[Plan]:
+    def get_latest_plan(self) -> Optional[Plan]:
         """获取会话中的最新计划"""
         # 1.倒序遍历会话中所有事件消息
         for event in reversed(self.events):

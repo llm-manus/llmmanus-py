@@ -119,7 +119,7 @@ class PlannerReActFlow(BaseFlow):
         await self._session_repository.update_status(self._session_id, SessionStatus.RUNNING)
 
         # 6.获取当前会话中最新事件
-        self.plan = session.get_lasted_plan()
+        self.plan = session.get_latest_plan()
         logger.info(f"Planner&ReAct流接受到消息: {message.message[:50]}...")
 
         # 7.定义当前正在执行的子步骤

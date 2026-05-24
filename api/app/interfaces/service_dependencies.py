@@ -20,7 +20,11 @@ from app.domain.repositories.session_repository import SessionRepository
 from app.infrastructure.external.file_storage.cos_file_storage import COSFileStorage
 from app.infrastructure.external.health_checker.mysql_health_checker import MysqlHealthChecker
 from app.infrastructure.external.health_checker.redis_health_checker import RedisHealthChecker
+from app.infrastructure.external.json_parser.repair_json_parser import RepairJSONParser
 from app.infrastructure.external.llm.openai_llm import OpenAILLM
+from app.infrastructure.external.sandbox.docker_sandbox import DockerSandbox
+from app.infrastructure.external.search.bing_search import BingSearchEngine
+from app.infrastructure.external.task.redis_stream_task import RedisStreamTask
 from app.infrastructure.repositories.db_file_repository import DBFileRepository
 from app.infrastructure.repositories.file_app_config_repository import FileAppConfigRepository
 from app.infrastructure.storage.cos import Cos, get_cos
@@ -87,7 +91,7 @@ def get_session_service(
 def get_agent_service(
         cos: Cos = Depends(get_cos),
         db_session: AsyncSession = Depends(get_db_session),
-        session_repository: SessionRepository = Depends(get_session_service),
+        session_repository: SessionRepository = Depends(get_db_session_repository),
 ) -> AgentService:
     # 1.获取应用配置信息（读取配置需要实时获取，所有不配置缓存）
     app_config_repository = FileAppConfigRepository(config_path=settings.app_config_filepath)
@@ -109,10 +113,10 @@ def get_agent_service(
         agent_config=app_config.agent_config,
         mcp_config=app_config.mcp_config,
         a2a_config=app_config.a2a_config,
-        sandbox_cls=app_config.sandbox_cls,
-        task_cls=app_config.task_cls,
-        json_parser=app_config.json_parser,
-        search_engine=app_config.search_engine,
+        sandbox_cls=DockerSandbox,
+        task_cls=RedisStreamTask,
+        json_parser=RepairJSONParser(),
+        search_engine=BingSearchEngine(),
         file_storage=file_storage,
         file_repository=file_repository,
     )

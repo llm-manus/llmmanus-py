@@ -18,7 +18,7 @@ from app.application.services.agent_service import AgentService
 from app.application.services.session_service import SessionService
 from app.interfaces.schemas import Response
 from app.interfaces.schemas.session import CreateSessionResponse, ListSessionResponse, ListSessionItem, ChatRequest
-from app.interfaces.service_dependencies import get_session_service
+from app.interfaces.service_dependencies import get_session_service, get_agent_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/session", tags=["会话模块"])
@@ -102,7 +102,7 @@ async def delete_session(
 async def chat(
         session_id: str,
         request: ChatRequest,
-        agent_service: AgentService = Depends(get_session_service),
+        agent_service: AgentService = Depends(get_agent_service),
 ) -> EventSourceResponse:
     """根据传递的会议id+chat请求数据向指定会话发起聊天请求"""
 
@@ -112,7 +112,7 @@ async def chat(
         async for event in agent_service.chat(
             session_id=session_id,
             message=request.message,
-            attachments=request.attachment,
+            attachments=request.attachments,
             latest_event_id=request.event_id,
             timestamp=datetime.fromtimestamp(request.timestamp) if request.timestamp else None,
         ):

@@ -12,6 +12,8 @@ from typing import Optional
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
+from app.domain.repositories.uow import IUnitOfWork
+from app.infrastructure.repositories.db_uow import DBUnitOfWork
 from core.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -96,3 +98,12 @@ async def get_db_session() -> AsyncSession:
         except Exception as _:
             await session.rollback()
             raise
+
+
+def get_session_factory():
+    """获取数据库会话工厂"""
+    db = get_mysql()
+    return db.session_factory
+
+def get_uow() -> IUnitOfWork:
+    return DBUnitOfWork(session_factory=get_session_factory())

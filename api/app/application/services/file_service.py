@@ -5,14 +5,14 @@
 #Author  :Emcikem
 @File    :file_service.py
 """
-from typing import Tuple, BinaryIO
+from typing import Tuple, BinaryIO, Callable
 
 from fastapi import UploadFile
 
 from app.application.errors.exception import NotFoundError
 from app.domain.external.file_storage import FileStorage
 from app.domain.models.file import File
-from app.domain.repositories.file_repository import FileRepository
+from app.domain.repositories.uow import IUnitOfWork
 
 
 class FileService:
@@ -20,12 +20,13 @@ class FileService:
 
     def __init__(
             self,
+            uow_factory: Callable[[], IUnitOfWork],
             file_storage: FileStorage,
-            file_repository: FileRepository
     ) -> None:
         """构造函数，完成文件服务的初始化"""
         self.file_storage = file_storage
-        self.file_repository = file_repository
+        self._uow_factory = uow_factory
+        self._uow = uow_factory()
 
     async def upload_file(self, upload_file: UploadFile) -> File:
         """将传递的文件上传到腾讯云cos并记录上传数据"""
@@ -33,7 +34,8 @@ class FileService:
 
     async def get_file_info(self, file_id: str) -> File:
         """根据传递的文件id获取文件消息"""
-        file = await self.file_repository.get_by_id(file_id)
+        async with self._uow:
+            file = await self._uow.file.get_by_id(file_id)
         if not file:
             raise NotFoundError(f"该文件[{file_id}]不存在")
         return file

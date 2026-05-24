@@ -5,10 +5,11 @@
 #Author  :Emcikem
 @File    :db_session_repository.py
 """
+import json
 from datetime import datetime
 from typing import List, Optional, cast
 
-from sqlalchemy import select, delete, update, func
+from sqlalchemy import select, delete, update, func, JSON
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -94,8 +95,8 @@ class DBSessionRepository(SessionRepository):
             update(SessionModel)
             .where(SessionModel.id == session_id)
             .values(
-                last_message=message,
-                last_message_at=timestamp,
+                latest_message=message,
+                latest_message_at=timestamp,
             )
         )
         result = await self.db_session.execute(stmt)
@@ -114,7 +115,12 @@ class DBSessionRepository(SessionRepository):
             update(SessionModel)
             .where(SessionModel.id == session_id)
             .values(
-                events=func.coalesce(SessionModel.events, cast([], JSONB)) + cast([event_data], JSONB)
+                events=func.JSON_ARRAY_APPEND(
+                    func.coalesce(SessionModel.events, cast([], JSON)),
+                    "$",
+                    # ✅ 必须转成 JSON 字符串！！！
+                    func.cast(event_data, JSON)
+                )
             )
         )
         result = await self.db_session.execute(stmt)
