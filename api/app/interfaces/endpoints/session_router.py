@@ -249,7 +249,7 @@ async def read_file(
 
 @router.post(
     path="/{session_id}/shell",
-    response_model=FileReadResponse[ShellReadResponse],
+    response_model=Response[ShellReadResponse],
     summary="查看会话的shell内容输出",
     description="传递指定会话id与shell会话表示，查看shell内容输出"
 )
