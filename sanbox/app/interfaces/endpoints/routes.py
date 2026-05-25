@@ -10,7 +10,7 @@ from fastapi import APIRouter
 from app.interfaces.endpoints import file, shell, supervisor
 
 
-def create_api_routers() -> APIRouter:
+def create_api_routes() -> APIRouter:
     """创建API路由，涵盖整个沙箱项目的所有API"""
     # 1.创建APIRouter实例
     api_router = APIRouter()
@@ -23,4 +23,4 @@ def create_api_routers() -> APIRouter:
     return api_router
 
 
-router = create_api_routers()
+router = create_api_routes()

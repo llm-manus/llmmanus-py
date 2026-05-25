@@ -13,7 +13,7 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
-from app.core.middleware import auto_extend_time_middleware
+from app.core.middleware import auto_extend_timeout_middleware
 from app.interfaces.endpoints.routes import router
 from app.interfaces.errors.exception_handler import register_exception_handler
 
@@ -91,7 +91,7 @@ app = FastAPI(
 )
 
 # 4.添加CORS中间件
-app.middleware("http")(auto_extend_time_middleware)
+app.middleware("http")(auto_extend_timeout_middleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

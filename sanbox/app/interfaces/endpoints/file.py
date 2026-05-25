@@ -7,18 +7,34 @@
 """
 import os.path
 
-from fastapi import APIRouter, Depends, Form, File, UploadFile
+from fastapi import APIRouter, Depends, UploadFile, File, Form
 from fastapi.responses import FileResponse
 
 from app.interfaces.schemas.base import Response
-from app.interfaces.schemas.file import FileReadRequest, FileWriteRequest, FileFindRequest, FileCheckRequest, \
+from app.interfaces.schemas.file import (
+    FileReadRequest,
+    FileWriteRequest,
+    FileReplaceRequest,
+    FileSearchRequest,
+    FileFindRequest,
+    FileCheckRequest,
     FileDeleteRequest
+)
 from app.interfaces.service_dependencies import get_file_service
-from app.models.file import FileReadResult, FileWriteResult, FileReplaceResult, FileSearchResult, FileFindResult, \
-    FileUploadResult, FileCheckResult, FileDeleteResult
+from app.models.file import (
+    FileReadResult,
+    FileWriteResult,
+    FileReplaceResult,
+    FileSearchResult,
+    FileFindResult,
+    FileUploadResult,
+    FileCheckResult,
+    FileDeleteResult
+)
 from app.services.file import FileService
 
-router = APIRouter(prefix="/file", tags=["File模块"])
+# 文件模块路由
+router = APIRouter(prefix="/file", tags=["文件模块"])
 
 
 @router.post(
@@ -39,12 +55,12 @@ async def read_file(
     )
 
     return Response.success(
-        msg="文件读取成功",
+        msg="文件内容读取成功",
         data=result,
     )
 
 
-@router.get(
+@router.post(
     path="/write-file",
     response_model=Response[FileWriteResult],
 )
@@ -73,7 +89,7 @@ async def write_file(
     response_model=Response[FileReplaceResult],
 )
 async def replace_in_file(
-        request: FileReplaceResult,
+        request: FileReplaceRequest,
         file_service: FileService = Depends(get_file_service),
 ) -> Response[FileReplaceResult]:
     """根据传递的数据替换文件内的部分内容"""
@@ -85,17 +101,17 @@ async def replace_in_file(
     )
 
     return Response.success(
-        msg=f"文件内容替换完成，已替换{result.replace_count}处内容",
+        msg=f"文件内容替换完成, 已替换{result.replaced_count}处内容",
         data=result,
     )
 
 
 @router.post(
-    path="/delete-file",
+    path="/search-in-file",
     response_model=Response[FileSearchResult],
 )
 async def search_in_file(
-        request: FileSearchResult,
+        request: FileSearchRequest,
         file_service: FileService = Depends(get_file_service),
 ) -> Response[FileSearchResult]:
     """根据传递的数据检索指定文件的内容"""
@@ -106,27 +122,27 @@ async def search_in_file(
     )
 
     return Response.success(
-        msg=f"文件内容搜索完成，找到{len(result.mathces)}处匹配内容",
+        msg=f"文件内容搜索完成, 找到{len(result.matches)}处匹配内容",
         data=result,
     )
 
 
 @router.post(
-    path="find-file",
+    path="/find-files",
     response_model=Response[FileFindResult],
 )
-async def find_file(
+async def find_files(
         request: FileFindRequest,
         file_service: FileService = Depends(get_file_service),
 ) -> Response[FileFindResult]:
     """根据传递的文件夹+glob文件规则查找文件列表"""
     result = await file_service.find_files(
         dir_path=request.dir_path,
-        glob_pattern=request.pattern,
+        glob_pattern=request.glob_pattern,
     )
 
     return Response.success(
-        msg=f"查找完毕，检索到{len(result.files)}个文件",
+        msg=f"查找完毕, 检索到{len(result.files)}个文件",
         data=result,
     )
 
@@ -154,21 +170,19 @@ async def upload_file(
     )
 
 
-@router.post(
-    path="/download-file",
-)
+@router.get(path="/download-file")
 async def download_file(
         filepath: str,
         file_service: FileService = Depends(get_file_service),
 ) -> FileResponse:
     """根据传递的filepath下载指定的文件"""
-    # 1.确定下当前文件存在
+    # 1.确保下当前文件存在
     await file_service.ensure_file(filepath)
 
     # 2.提取文件名字
     filename = os.path.basename(filepath)
 
-    # 3.返回文件下载相应
+    # 3.返回文件下载响应
     return FileResponse(
         path=filepath,
         filename=filename,
