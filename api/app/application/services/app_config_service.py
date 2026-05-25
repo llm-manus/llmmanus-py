@@ -65,7 +65,7 @@ class AppConfigService:
 
     async def get_mcp_servers(self) -> List[ListMCPServerItem]:
         """获取MCP服务器列表"""
-        # 1.获取当且应用配置
+        # 1.获取当前应用配置
         app_config = await self._load_app_config()
 
         # 2.创建mcp客户端管理器，对配置信息不进行过滤
@@ -88,7 +88,7 @@ class AppConfigService:
                     tools=[tool.name for tool in tools.get(server_name, [])]
                 ))
         finally:
-            # 清除MCP客户端管理器的相关资源
+            # 6.清除MCP客户端管理器的相关资源
             await mcp_client_manager.cleanup()
 
         return mcp_servers

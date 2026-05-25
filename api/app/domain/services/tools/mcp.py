@@ -68,34 +68,34 @@ class MCPClientManager:
 
         try:
             # 2.记录日志并连接MCP服务器
-            logger.info(f"从config.yaml中加载了{len(self._mcp_config.mcpServers)}个服务器")
+            logger.info(f"从config.yaml中加载了{len(self._mcp_config.mcpServers)}个MCP服务器")
             await self._connect_mcp_servers()
             self._initialized = True
             logger.info(f"MCP客户端管理器加载成功")
         except Exception as e:
             # 3.记录错误信息并直接抛出
-            logger.error(f"MCP客户端管理器加载失败：{str(e)}")
+            logger.error(f"MCP客户端管理器加载失败: {str(e)}")
             raise
 
     async def _connect_mcp_servers(self) -> None:
-        """根据配置连接连接"""
-        # 1.循环遍历传递进来的所有MCP服务器，不用例会enabled的状态，因为在外部会执行筛选
-        for server_name, server_config in self._mcp_config.mcp_config.mcpServers.items():
+        """根据配置连接所有MCP服务"""
+        # 1.循环遍历传递进来的所有MCP服务器，不用理会enabled的状态，因为在外部会执行筛选
+        for server_name, server_config in self._mcp_config.mcpServers.items():
             try:
                 # 2.根据服务名字+服务配置连接到MCP服务器
-                await self._connect_mcp_servers(server_name, server_config)
+                await self._connect_mcp_server(server_name, server_config)
             except Exception as e:
                 # 3.记录错误日志并跳过错误的MCP服务器
-                logger.error(f"连接MCP服务器[{server_name}]出错：{str(e)}")
+                logger.error(f"连接MCP服务器[{server_name}]出错: {str(e)}")
                 continue
 
-    async def _connect_mcp_servers(self, server_name: str, server_config: MCPServerConfig) -> None:
+    async def _connect_mcp_server(self, server_name: str, server_config: MCPServerConfig) -> None:
         """根据传递的服务名字+服务配置连接到单个MCP服务"""
         try:
             # 1.获取mcp服务的传输协议
             transport = server_config.transport
 
-            # 2.根据不同的传输协议调用不同的连接MCP服务器
+            # 2.根据不同的传输协议调用不同的方法连接MCP服务器
             if transport == MCPTransport.STDIO:
                 await self._connect_stdio_server(server_name, server_config)
             elif transport == MCPTransport.SSE:
@@ -103,11 +103,10 @@ class MCPClientManager:
             elif transport == MCPTransport.STREAMABLE_HTTP:
                 await self._connect_streamable_http_server(server_name, server_config)
             else:
-                raise ValueError(f"MCP服务[{server_name}]使用了不支持的协议：{transport}")
-
+                raise ValueError(f"MCP服务[{server_name}]使用了不支持的传输协议: {transport}")
         except Exception as e:
-            # 记录日志并抛出异常
-            logger.error(f"连接MCP服务器[{server_name}]出错：{str(e)}")
+            # 3.记录日志并抛出异常
+            logger.error(f"连接MCP服务器[{server_name}]出错: {str(e)}")
             raise
 
     async def _connect_stdio_server(self, server_name: str, server_config: MCPServerConfig) -> None:
@@ -135,9 +134,9 @@ class MCPClientManager:
             )
             read_stream, write_stream = stdio_transport
 
-            # 5.根据读取与写入流建会话
+            # 5.根据读取与写入流构建会话
             session: ClientSession = await self._exit_stack.enter_async_context(
-                ClientSession(read_stream, write_stream)
+                ClientSession(read_stream, write_stream),
             )
 
             # 6.初始化MCP服务会话
@@ -148,10 +147,10 @@ class MCPClientManager:
 
             # 8.缓存对应mcp服务的工具列表
             await self._cache_mcp_server_tools(server_name, session)
-            logger.info(f"连接stdio-mcp服务成功：{server_name}")
+            logger.info(f"连接stdio-mcp服务器成功: {server_name}")
         except Exception as e:
             # 记录错误日志并直接抛出异常
-            logger.error(f"连接stdio-mcp服务器失败：{str(e)}")
+            logger.error(f"连接stdio-mcp服务器失败: {str(e)}")
             raise
 
     async def _connect_sse_server(self, server_name: str, server_config: MCPServerConfig) -> None:
@@ -170,7 +169,7 @@ class MCPClientManager:
 
             # 3.创建客户端会话
             session: ClientSession = await self._exit_stack.enter_async_context(
-                ClientSession(read_stream, write_stream)
+                ClientSession(read_stream, write_stream),
             )
 
             # 4.初始化MCP服务会话
@@ -181,15 +180,15 @@ class MCPClientManager:
 
             # 6.缓存对应mcp服务的工具列表
             await self._cache_mcp_server_tools(server_name, session)
-            logger.info(f"连接sse-mcp服务成功：{server_name}")
+            logger.info(f"连接sse-mcp服务器成功: {server_name}")
         except Exception as e:
-            # 记录错误日志并直接抛出异常
-            logger.error(f"连接sse-mcp服务器失败：{str(e)}")
+            # 7.记录错误日志并直接抛出异常
+            logger.error(f"连接sse-mcp服务器失败: {str(e)}")
             raise
 
     async def _connect_streamable_http_server(self, server_name: str, server_config: MCPServerConfig) -> None:
         """根据服务名字+配置连接streamable-http服务"""
-        # 1.提取streamable-http服务器的连接url并判定是否存在
+        # 1.提取streamable-http服务器的连接url并判断是否存在
         url = server_config.url
         if not url:
             raise ValueError("连接sse-mcp服务器需要配置url")
@@ -208,7 +207,7 @@ class MCPClientManager:
 
             # 4.创建客户端会话
             session: ClientSession = await self._exit_stack.enter_async_context(
-                ClientSession(read_stream, write_stream)
+                ClientSession(read_stream, write_stream),
             )
 
             # 5.初始化MCP服务会话
@@ -219,9 +218,10 @@ class MCPClientManager:
 
             # 7.缓存对应mcp服务的工具列表
             await self._cache_mcp_server_tools(server_name, session)
-            logger.info(f"连接streamable-http-mcp服务成功：{server_name}")
+            logger.info(f"连接streamable-http-mcp服务器成功: {server_name}")
         except Exception as e:
-            logger.error(f"连接streamable-http-mcp服务器失败：{str(e)}")
+            # 7.记录错误日志并直接抛出异常
+            logger.error(f"连接streamable-http-mcp服务器失败: {str(e)}")
             raise
 
     async def _cache_mcp_server_tools(self, server_name: str, session: ClientSession) -> None:
@@ -232,13 +232,13 @@ class MCPClientManager:
             self._tools[server_name] = tools
             logger.info(f"MCP服务器[{server_name}]提供了{len(tools)}个工具")
         except Exception as e:
-            # 记录日志并缓存设置为空
-            logger.error(f"获取MCP服务器[{server_name}]工具列表失败：{str(e)}")
+            # 记录日志并将缓存设置为空
+            logger.error(f"获取MCP服务器[{server_name}]工具列表失败: {str(e)}")
             self._tools[server_name] = []
 
     async def get_all_tools(self) -> List[Dict[str, Any]]:
         """获取所有MCP工具列表，返回LLM可以使用的工具参数声明列表并处理MCP的名字"""
-        # 1.定义一个变量存储所有的结果
+        # 1.定义一个变量存储所有结果
         all_tools = []
 
         # 2.循环遍历所有缓存的工具
@@ -262,12 +262,12 @@ class MCPClientManager:
                 }
                 all_tools.append(tool_schema)
 
-            return all_tools
+        return all_tools
 
     async def invoke(self, tool_name: str, arguments: Dict[str, Any]) -> ToolResult:
         """根据传递的工具名字+参数调用MCP工具"""
         try:
-            # 1.定义遍历存储原始的服务名字+工具
+            # 1.定义变量存储原始的服务名字+工具
             original_server_name = None
             original_tool_name = None
 
@@ -276,26 +276,26 @@ class MCPClientManager:
                 # 3.为server_name组装前缀
                 expected_prefix = server_name if server_name.startswith("mcp_") else f"mcp_{server_name}"
 
-                # 4.判定工具名字是否以服务名字为开头
+                # 4.判断工具名字是否以该服务名字为开头
                 if tool_name.startswith(f"{expected_prefix}_"):
                     # 5.取出原始的服务名字+工具名字
                     original_server_name = server_name
                     original_tool_name = tool_name[len(expected_prefix) + 1:]
                     break
 
-            # 6.判定服务名字+工具是否都存在
+            # 6.判断服务名字+工具是否都存在
             if not original_server_name or not original_tool_name:
-                raise NotFoundError(f"服务器解析MCP工具不存在：{tool_name}")
+                raise NotFoundError(f"服务器解析MCP工具不存在: {tool_name}")
 
             # 7.获取该工具所属的会话
             session = self._clients.get(original_server_name)
             if not session:
-                return ToolResult(success=False, message=f"MCP服务器[{original_server_name}]不存在")
+                return ToolResult(success=False, message=f"MCP服务器[{original_server_name}]未连接")
 
             # 8.使用会话调用工具
             result = await session.call_tool(original_tool_name, arguments)
 
-            # 9.判定结果是否存在执行不同的操作
+            # 9.判断结果是否存在执行不同的操作
             if result:
                 # 10.处理MCP工具生成的content
                 content = []
@@ -305,6 +305,7 @@ class MCPClientManager:
                             content.append(item.text)
                         else:
                             content.append(str(item))
+
                 # 11.返回工具结果
                 return ToolResult(
                     success=True,
@@ -312,21 +313,20 @@ class MCPClientManager:
                 )
             else:
                 return ToolResult(success=True, data="工具执行成功")
-
         except Exception as e:
             # 记录错误日志并返回失败的工具结果
-            logger.error(f"调用MCP工具[{tool_name}]失败：{str(e)}")
+            logger.error(f"调用MCP工具[{tool_name}]失败: {str(e)}")
             return ToolResult(
                 success=False,
-                message=f"调用MCP工具[{tool_name}]失败：{str(e)}",
+                message=f"调用MCP工具[{tool_name}]失败: {str(e)}",
             )
 
     async def cleanup(self) -> None:
-        """当退出CMP服务时，清除对应资源
+        """当退出MCP服务时，清除对应资源
 
         该方法是幂等的，多次调用不会产生副作用。
-        注意：必须在初始化MCP的同一个asyncio Task中调用此方法
-        否则anyio会因cancel scope上下午不匹配而RuntimeError。
+        注意：必须在初始化MCP的同一个asyncio Task中调用此方法，
+        否则anyio会因cancel scope上下文不匹配而抛出RuntimeError。
         """
         # 幂等检查：如果未初始化则跳过清理
         if not self._initialized:
@@ -340,12 +340,11 @@ class MCPClientManager:
             if "Attempted to exit cancel scope in a different task" in str(e):
                 logger.warning(f"清理MCP客户端管理器时遇到任务上下文切换警告（可忽略）: {str(e)}")
             else:
-                logger.error(f"清理MCP客户端管理器失败：: {str(e)}")
+                logger.error(f"清理MCP客户端管理器失败: {str(e)}")
         except Exception as e:
-            logger.error(f"清理MCP客户端管理器失败：{str(e)}")
+            logger.error(f"清理MCP客户端管理器失败: {str(e)}")
         finally:
             # 无论aclose()是否成功，都必须清除缓存并重置状态
-            await self._exit_stack.aclose()
             self._clients.clear()
             self._tools.clear()
             self._initialized = False
@@ -364,7 +363,7 @@ class MCPTool(BaseTool):
 
     async def initialize(self, mcp_config: Optional[MCPConfig] = None) -> None:
         """初始化MCP工具包"""
-        # 1.判定是否初始化，如果未初始化则进行初始化
+        # 1.判断是否初始化，如果未初始化则进行初始化
         if not self._initialized:
             # 2.初始化MCP客户端管理器
             self._manager = MCPClientManager(mcp_config=mcp_config)
@@ -379,17 +378,17 @@ class MCPTool(BaseTool):
         return self._tools
 
     def has_tool(self, tool_name: str) -> bool:
-        """传递工具名字判定工具是否存在"""
+        """传递工具名字判断工具是否存在"""
         # 1.循环遍历所有的工具
         for tool in self._tools:
-            # 2.判定工具的名字是否存在，如果是则返回True，否则返回False
+            # 2.判断工具的名字是否存在，如果是则返回True，否则返回False
             if tool["function"]["name"] == tool_name:
                 return True
 
         return False
 
     async def invoke(self, tool_name: str, **kwargs) -> ToolResult:
-        """传递工具名字+参数调页MCP工具并获取结果"""
+        """传递工具名字+参数调用MCP工具并获取结果"""
         return await self._manager.invoke(tool_name, kwargs)
 
     async def cleanup(self) -> None:
