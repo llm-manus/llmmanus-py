@@ -34,7 +34,7 @@ async def exec_command(
     if not request.session_id or request.session_id == "":
         request.session_id = shell_service.create_session_id()
 
-    # 2.判断下是否传递了执行目录，如果为传递则使用根目录作为执行路径
+    # 2.判断下是否传递了执行目录，如果未传递则使用根目录作为执行路径
     if not request.exec_dir or request.exec_dir == "":
         request.exec_dir = os.path.expanduser("~")
 
@@ -50,7 +50,7 @@ async def exec_command(
 
 @router.post(
     path="/read-shell-output",
-    response_model=Response[ShellReadResult],
+    response_model=Response[ShellReadResult]
 )
 async def read_shell_output(
         request: ShellReadRequest,
@@ -59,9 +59,9 @@ async def read_shell_output(
     """根据传递的会话id+是否返回控制台标识获取Shell命令执行结果"""
     # 1.判断下Shell会话id是否存在
     if not request.session_id or request.session_id == "":
-        raise BadRequestException("Shell会话ID为空，请核实后重试")
+        raise BadRequestException("Shell会话ID为空, 请核实后重试")
 
-    # 2.调页服务获取命令执行结果
+    # 2.调用服务获取命令执行结果
     result = await shell_service.read_shell_output(request.session_id, request.console)
 
     return Response.success(data=result)
@@ -69,29 +69,29 @@ async def read_shell_output(
 
 @router.post(
     path="/wait-process",
-    response_model=Response[ShellExecuteResult],
+    response_model=Response[ShellWaitResult],
 )
 async def wait_process(
         request: ShellWaitRequest,
         shell_service: ShellService = Depends(get_shell_service),
 ) -> Response[ShellWaitResult]:
-    """传递对话id+描述执行等待并获取等待结果"""
+    """传递会话id+描述执行等待并获取等待结果"""
     # 1.判断下Shell会话id是否存在
     if not request.session_id or request.session_id == "":
-        raise BadRequestException("Shell会话ID为空，请核实后重试")
+        raise BadRequestException("Shell会话ID为空, 请核实后重试")
 
     # 2.调用服务等待子进程
     result = await shell_service.wait_process(request.session_id, request.seconds)
 
     return Response.success(
-        msg=f"进程结束，返回状态码(returncode): {result.returncode}",
-        data=result
+        msg=f"进程结束, 返回状态码(returncode): {result.returncode}",
+        data=result,
     )
 
 
 @router.post(
     path="/write-shell-input",
-    response_model=Response[ShellWaitResult],
+    response_model=Response[ShellWriteResult],
 )
 async def write_shell_input(
         request: ShellWriteRequest,
@@ -100,7 +100,7 @@ async def write_shell_input(
     """根据传递的会话+写入内容+按下回车标识向指定子进程写入数据"""
     # 1.判断下Shell会话id是否存在
     if not request.session_id or request.session_id == "":
-        raise BadRequestException("Shell会话ID为空，请核实后重试")
+        raise BadRequestException("Shell会话ID为空, 请核实后重试")
 
     # 2.调用服务向子进程写入数据
     result = await shell_service.write_shell_input(
@@ -111,7 +111,7 @@ async def write_shell_input(
 
     return Response.success(
         msg="向进程写入数据成功",
-        data=result
+        data=result,
     )
 
 
@@ -123,15 +123,15 @@ async def kill_process(
         request: ShellKillRequest,
         shell_service: ShellService = Depends(get_shell_service),
 ) -> Response[ShellKillResult]:
-    """传递Shell会话id关闭指定对话"""
+    """传递Shell会话id关闭指定会话"""
     # 1.判断下Shell会话id是否存在
     if not request.session_id or request.session_id == "":
-        raise BadRequestException("Shell会话ID为空，请核实后重试")
+        raise BadRequestException("Shell会话ID为空, 请核实后重试")
 
     # 2.调用服务关闭Shell会话
     result = await shell_service.kill_process(request.session_id)
 
     return Response.success(
         msg="进程终止" if result.status == "terminated" else "进程已结束",
-        data=result
+        data=result,
     )
