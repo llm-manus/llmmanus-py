@@ -20,7 +20,7 @@ class AppException(Exception):
             self,
             msg: str = "应用发生错误请稍后尝试",
             status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            data: Any = None,
+            data: Any = None
     ) -> None:
         """构造函数，完成异常的初始化"""
         # 1.完成数据初始化
@@ -29,7 +29,7 @@ class AppException(Exception):
         self.data = data
 
         # 2.记录日志并调用父类构造函数
-        logger.error(f"沙箱发生错误：{msg} (code: {status_code})")
+        logger.error(f"沙箱发生错误: {msg} (code: {status_code})")
         super().__init__(self.msg)
 
 

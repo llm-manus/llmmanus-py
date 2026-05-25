@@ -17,17 +17,17 @@ from app.interfaces.schemas.base import Response
 logger = logging.getLogger(__name__)
 
 
-def register_exception_handler(app: FastAPI) -> None:
+def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppException)
     async def app_exception_handler(req: Request, e: AppException) -> JSONResponse:
-        """处理Manus沙箱自定义业务异常，将所有状态统一响应结构"""
+        """处理MoocManus沙箱自定义业务异常，将所有状态统一响应结构"""
         logger.error(f"AppException: {e.msg}")
         return JSONResponse(
             status_code=e.status_code,
             content=Response(
                 code=e.status_code,
                 msg=e.msg,
-                data={},
+                data={}
             ).model_dump(),
         )
 
@@ -40,19 +40,19 @@ def register_exception_handler(app: FastAPI) -> None:
             content=Response(
                 code=e.status_code,
                 msg=e.detail,
-                data={},
+                data={}
             ).model_dump(),
         )
 
     @app.exception_handler(Exception)
     async def exception_handler(req: Request, e: Exception) -> JSONResponse:
-        """处理Manus沙箱服务中抛出的任意未定义异常，将所有状态码统一响应结构"""
-        logger.error(f"Exception：{str(e)}")
+        """处理MoocManus沙箱服务中抛出的任意未定义异常，将所有状态码统一响应结构"""
+        logger.error(f"Exception: {str(e)}")
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content=Response(
                 code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 msg="服务器出现异常请稍后尝试",
-                data={},
+                data={}
             ).model_dump(),
         )
