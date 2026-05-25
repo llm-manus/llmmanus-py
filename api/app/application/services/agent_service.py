@@ -75,9 +75,9 @@ class AgentService:
         if sandbox_id:
             sandbox = await self._sandbox_cls.get(sandbox_id)
 
-        # 2.判断是否能获取到沙箱（如果没有则创建）
+        # 2.判断是否能获取到沙箱(如果没有则创建)
         if not sandbox:
-            # 3.沙箱不存在则创建一个新的（有可能是被释放了）
+            # 3.沙箱不存在则创建一个新的(有可能被释放了)
             sandbox = await self._sandbox_cls.create()
             session.sandbox_id = sandbox.id
             async with self._uow:
@@ -86,7 +86,8 @@ class AgentService:
         # 4.从沙箱中获取浏览器实例
         browser = await sandbox.get_browser()
         if not browser:
-            logger.error(f"获取沙箱[{sandbox.id}]中的浏览器")
+            logger.error(f"获取沙箱[{sandbox.id}]中的浏览器实例失败")
+            raise RuntimeError(f"获取沙箱[{sandbox.id}]中的浏览器实例失败")
 
         # 5.创建AgentTaskRunner
         task_runner = AgentTaskRunner(
@@ -103,7 +104,7 @@ class AgentService:
             sandbox=sandbox,
         )
 
-        # 6.创建任务Task更新会话中的信息
+        # 6.创建任务Task并更新会话中的信息
         task = self._task_cls.create(task_runner=task_runner)
         session.task_id = task.id
         async with self._uow:
