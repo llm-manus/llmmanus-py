@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 class FileReadResult(BaseModel):
     """文件读取结果"""
-    filepath: str = Field(..., description="要读取的文件路径")
+    filepath: str = Field(..., description="要读取的文件绝对路径")
     content: str = Field(..., description="读取的文件内容")
 
 
@@ -25,7 +25,7 @@ class FileWriteResult(BaseModel):
 class FileReplaceResult(BaseModel):
     """文件内容替换结果模型"""
     filepath: str = Field(..., description="要替换内容的文件绝对路径")
-    replaced_count: int = Field(..., description="替换内容的次数")
+    replaced_count: int = Field(default=0, description="替换内容的次数")
 
 
 class FileSearchResult(BaseModel):
@@ -37,14 +37,14 @@ class FileSearchResult(BaseModel):
 
 class FileFindResult(BaseModel):
     """文件查找结果"""
-    dir_path: str = Field(..., description="搜素的目录绝对路径")
+    dir_path: str = Field(..., description="搜索的目录绝对路径")
     files: List[str] = Field(default_factory=list, description="检索到的文件列表")
 
 
 class FileUploadResult(BaseModel):
     """文件上传结果"""
     filepath: str = Field(..., description="上传文件的绝对路径")
-    file_size: int = Field(default=0, description="上传文件的大小，单位为字节")
+    file_size: int = Field(default=0, description="上传文件的大小, 单位为字节")
     success: bool = Field(..., description="是否上传成功")
 
 

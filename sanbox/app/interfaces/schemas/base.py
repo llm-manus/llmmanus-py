@@ -13,7 +13,7 @@ T = TypeVar("T")
 
 
 class Response(BaseModel, Generic[T]):
-    """基础API响应结构，集成BaseModel，并定义泛型"""
+    """基础API响应结构，继承BaseModel，并定义泛型"""
     code: int = 200  # 业务状态码，和HTTP状态码保持一致
     msg: str = "success"  # 响应消息提示
     data: Optional[T] = Field(default_factory=dict)  # 响应数据默认为空字典

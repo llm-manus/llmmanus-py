@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
 	"a2a-sdk>=1.0.2",
 	"aiomysql>=0.3.2",
+	"alembic>=1.18.4",
 	"async-lru",
 	"beautifulsoup4>=4.14.3",
 	"browser-use>=0.11.1",

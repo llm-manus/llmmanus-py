@@ -26,7 +26,7 @@ class ShellReadRequest(BaseModel):
 class ShellWaitRequest(BaseModel):
     """等待Shell命令执行请求结构体"""
     session_id: str = Field(..., description="目标 Shell 会话的唯一标识符")
-    seconds: Optional[int] = Field(default=None, description="等待时间，单位为秒")
+    seconds: Optional[int] = Field(default=None, description="等待时间, 单位为秒")
 
 
 class ShellWriteRequest(BaseModel):

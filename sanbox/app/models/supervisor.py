@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 
 class ProcessInfo(BaseModel):
-    """进程消息模型"""
+    """进程信息模型"""
     name: str = Field(..., description="进程名字")
     group: str = Field(..., description="进程分组")
     description: str = Field(..., description="进程描述")
@@ -25,7 +25,7 @@ class ProcessInfo(BaseModel):
     logfile: str = Field(..., description="日志文件")
     stdout_logfile: str = Field(..., description="标准输出日志文件")
     stderr_logfile: str = Field(..., description="标准错误日志文件")
-    pid: str = Field(..., description="进程id(Process ID)")
+    pid: int = Field(..., description="进程id(Process ID)")
 
 
 class SupervisorActionResult(BaseModel):
@@ -38,9 +38,9 @@ class SupervisorActionResult(BaseModel):
 
 
 class SupervisorTimeout(BaseModel):
-    """Supervisor超时时间销毁模型"""
+    """Supervisor超时销毁模型"""
     status: Optional[str] = Field(default=None, description="超时设置状态")
     active: bool = Field(default=False, description="超时销毁是否激活")
     shutdown_time: Optional[str] = Field(default=None, description="销毁时间")
-    timeout_minutes: Optional[float] = Field(default=None, description="超时时间，单位分钟")
+    timeout_minutes: Optional[float] = Field(default=None, description="超时时间, 单位为分钟")
     remaining_seconds: Optional[float] = Field(default=None, description="超时剩余秒数")

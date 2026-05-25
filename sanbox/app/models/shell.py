@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field, ConfigDict
 class ConsoleRecord(BaseModel):
     """Shell命令行控制台记录"""
     ps1: str = Field(..., description="ps1")
-    command: str = Field(..., description="执行内容")
+    command: str = Field(..., description="执行命令")
     output: str = Field(default="", description="输出内容")
 
 
@@ -38,7 +38,7 @@ class ShellWaitResult(BaseModel):
 
 class ShellReadResult(BaseModel):
     """Shell命令结果模型"""
-    session_id: str = Field(..., description="SHell会话id")
+    session_id: str = Field(..., description="Shell会话id")
     output: str = Field(..., description="Shell会话输出内容")
     console_records: List[ConsoleRecord] = Field(default_factory=list, description="控制台记录")
 
