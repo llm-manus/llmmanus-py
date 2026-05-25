@@ -8,8 +8,6 @@
 import logging
 from typing import List, Callable, Type
 
-from sqlalchemy.sql.functions import session_user
-
 from app.application.errors.exception import NotFoundError, ServerRequestsError
 from app.domain.external.sandbox import Sandbox
 from app.domain.models.file import File

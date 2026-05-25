@@ -213,7 +213,7 @@ async def stop_session(
     return Response.success(msg="停止任务会话成功")
 
 @router.get(
-    path="{session_id}/files",
+    path="/{session_id}/files",
     response_model=Response[GetSessionFilesResponse],
     summary="获取指定会话文件列表信息",
     description="获取指定会话文件列表信息"
