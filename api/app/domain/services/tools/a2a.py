@@ -199,7 +199,7 @@ class A2ATool(BaseTool):
                 "description": "需要调用远程agent的id，格式参考get_remote_agent_cards()返回的数据结构",
             },
             "query": {
-                "type": "query",
+                "type": "string",
                 "description": "需要分配给该远程Agent实现的任务/需求query",
             },
         },
