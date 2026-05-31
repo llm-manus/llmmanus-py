@@ -5,10 +5,11 @@
 #Author  :Emcikem
 @File    :db_session_repository.py
 """
+import json
 from datetime import datetime
 from typing import List, Optional, cast
 
-from sqlalchemy import select, delete, update, func
+from sqlalchemy import select, delete, update, func, case, text, JSON
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -105,23 +106,34 @@ class DBSessionRepository(SessionRepository):
             raise ValueError(f"会话[{session_id}]不存在，请核实后重试")
 
     async def add_event(self, session_id: str, event: BaseEvent) -> None:
-        """往会话中新增事件"""
-        # 1.将event序列化为json
-        event_data = event.model_dump(mode="json")
+        """往会话中新增事件（查询 → 修改 → 保存，最稳妥）"""
 
-        # 2.构建原子更新sql并执行
-        stmt = (
+        # 1. 先查询当前会话
+        stmt_select = select(SessionModel.events).where(SessionModel.id == session_id)
+        result = await self.db_session.execute(stmt_select)
+        row = result.scalar_one_or_none()
+
+        if row is None:
+            raise ValueError(f"会话[{session_id}]不存在，请核实后重试")
+
+        # 2. 拿到现有 events，确保是列表
+        events = row if isinstance(row, list) else []
+
+        # 3. 追加新事件
+        event_data = event.model_dump(mode="json")
+        events.append(event_data)
+
+        # 4. 执行更新（标准 SQLAlchemy 方式）
+        stmt_update = (
             update(SessionModel)
             .where(SessionModel.id == session_id)
-            .values(
-                events=func.coalesce(SessionModel.events, cast([], JSONB)) + cast([event_data], JSONB),
-            )
+            .values(events=events)
         )
-        result = await self.db_session.execute(stmt)
+        update_result = await self.db_session.execute(stmt_update)
 
-        # 2.检查是否更新成功
-        if result.rowcount == 0:
-            raise ValueError(f"会话[{session_id}]不存在，请核实后重试")
+        # 5. 你要的 result 判断
+        if update_result.rowcount == 0:
+            raise ValueError(f"会话[{session_id}]不存在或更新失败")
 
     async def add_file(self, session_id: str, file: File) -> None:
         """往会话中新增文件"""
@@ -248,27 +260,34 @@ class DBSessionRepository(SessionRepository):
             raise ValueError(f"会话[{session_id}]不存在，请核实后重试")
 
     async def save_memory(self, session_id: str, agent_name: str, memory: Memory) -> None:
-        """存储或更新会话中的记忆(字典直接覆盖)"""
-        # 1.将memory转换为json结构
+        """存储或更新会话中的记忆（查询 → 修改 → 保存）"""
+
+        # 1. 先查询当前会话的 memories
+        stmt_select = select(SessionModel.memories).where(SessionModel.id == session_id)
+        result = await self.db_session.execute(stmt_select)
+        row = result.scalar_one_or_none()
+
+        if row is None:
+            raise ValueError(f"会话[{session_id}]不存在，请核实后重试")
+
+        # 2. 拿到现有记忆，确保是字典（不是列表！）
+        memories = row if isinstance(row, dict) else {}
+
+        # 3. 直接覆盖/新增当前 agent 的记忆
         memory_data = memory.model_dump(mode="json")
+        memories[agent_name] = memory_data  # 字典赋值，覆盖式存储
 
-        # 2.构建要打补丁的字典
-        patch_data = {agent_name: memory_data}
-
-        # 3.构建sql并执行更新
-        stmt = (
+        # 4. 执行更新（标准 SQLAlchemy，无任何复杂函数）
+        stmt_update = (
             update(SessionModel)
             .where(SessionModel.id == session_id)
-            .values(
-                memories=func.coalesce(SessionModel.memories, cast({}, JSONB)) + cast([patch_data], JSONB)
-            )
+            .values(memories=memories)
         )
+        update_result = await self.db_session.execute(stmt_update)
 
-        result = await self.db_session.execute(stmt)
-
-        # 4.检查是否更新成功
-        if result.rowcount == 0:
-            raise ValueError(f"会话[{session_id}]不存在，请核实后重试")
+        # 5. result 判断（你要的）
+        if update_result.rowcount == 0:
+            raise ValueError(f"会话[{session_id}]不存在或更新失败")
 
     async def get_memory(self, session_id: str, agent_name: str) -> Memory:
         """获取制定会话的agent记忆"""

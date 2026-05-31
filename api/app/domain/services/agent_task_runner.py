@@ -83,7 +83,7 @@ class AgentTaskRunner(TaskRunner):
         """往制定任务的消息队列中添加事件"""
         # 1.往任务的输出消息队列中新增事件
         event_id = await task.output_stream.put(event.model_dump_json())
-        event.event_id = event_id
+        event.id = event_id
 
         # 2.将事件添加到对应的会话中
         async with self._uow:
@@ -100,7 +100,7 @@ class AgentTaskRunner(TaskRunner):
 
         # 2.使用pydantic+type类型将字符串转换成事件
         event = TypeAdapter(Event).validate_json(event_str)
-        event.event_id = event_id
+        event.id = event_id
 
         return event
 
@@ -354,7 +354,8 @@ class AgentTaskRunner(TaskRunner):
         try:
             # 1.确保沙箱、mcp、a2a均初始化完成
             logger.info(f"AgentTaskRunner任务处理开始")
-            await self._sandbox.ensure_sandbox()
+            # todo:沙箱
+            # await self._sandbox.ensure_sandbox()
             await self._mcp_tool.initialize(self._mcp_config)
             await self._a2a_tool.initialize(self._a2a_config)
 

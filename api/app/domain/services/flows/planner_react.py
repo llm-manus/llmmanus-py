@@ -142,7 +142,7 @@ class PlannerReActFlow(BaseFlow):
                     if isinstance(event, PlanEvent) and event.status == PlanEventStatus.CREATED:
                         # 12.创建计划成功时需要更新计划
                         self.plan = event.plan
-                        logger.info(f"Planner&ReAct流成功创建计划，共计：{len(event.plan.step)} 步")
+                        logger.info(f"Planner&ReAct流成功创建计划，共计：{len(event.plan.steps)} 步")
 
                         # 13.在计划中同步生成了会话标题+初始AI消息
                         yield TitleEvent(title=event.plan.title)
@@ -173,7 +173,7 @@ class PlannerReActFlow(BaseFlow):
                     continue
 
                 # 20.调用执行Agent执行对应的步骤
-                logger.info(f"Planner&ReAct流开始执行步骤 {step.event_id}: {step.description[:50]}...")
+                logger.info(f"Planner&ReAct流开始执行步骤 {step.id}: {step.description[:50]}...")
                 async for event in self.react.execute_step(self.plan, step, message):
                     yield event
 

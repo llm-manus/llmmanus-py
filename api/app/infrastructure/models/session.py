@@ -10,13 +10,12 @@ from datetime import datetime
 from typing import Dict, List, Any
 
 from sqlalchemy import (
-    PrimaryKeyConstraint, String, text, Integer, Text, DateTime
+    PrimaryKeyConstraint, String, text, Integer, Text, DateTime, JSON
 )
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import mapped_column, Mapped
 
 from .base import Base
-from ...domain.models.session import Session
+from ...domain.models.session import Session, SessionStatus
 
 
 class SessionModel(Base):
@@ -54,19 +53,19 @@ class SessionModel(Base):
         nullable=True,
     ) # 最后一条消息时间
     events: Mapped[List[Dict[str, Any]]] = mapped_column(
-        JSONB,
+        JSON,
         nullable=False,
-        server_default=text("'[]'::jsonb"),
+        server_default=text("'[]'"),
     ) # 事件类型
     files: Mapped[List[Dict[str, Any]]] = mapped_column(
-        JSONB,
+        JSON,
         nullable=False,
-        server_default=text("'[]'::jsonb"),
+        server_default=text("'[]'"),
     ) # 文件
     memories: Mapped[Dict[str, Any]] = mapped_column(
-        JSONB,
+        JSON,
         nullable=False,
-        server_default=text("'{}'::jsonb"),
+        server_default=text("'{}'"),
     ) # 会话两个Agent的记忆
     status: Mapped[str] = mapped_column(
         String(255),
@@ -102,8 +101,40 @@ class SessionModel(Base):
         )
 
     def to_domain(self) -> Session:
-        """将会话ORM模型转换成领域模型"""
-        return Session.model_validate(self, from_attributes=True)
+        """将会话ORM模型转换成领域模型（终极修复版）"""
+        import json
+
+        # 核心：专门处理你的场景 —— 列表里的字符串转对象
+        def parse_json_list(value):
+            # 如果是列表，遍历把每个字符串转成字典
+            if isinstance(value, list):
+                return [json.loads(item) if isinstance(item, str) else item for item in value]
+            # 如果是字符串，整体转成列表
+            if isinstance(value, str):
+                return json.loads(value)
+            return value
+
+        def parse_json_dict(value):
+            if isinstance(value, str):
+                return json.loads(value)
+            return value
+
+        return Session(
+            id=self.id,
+            sandbox_id=self.sandbox_id,
+            task_id=self.task_id,
+            title=self.title,
+            unread_message_count=self.unread_message_count,
+            latest_message=self.latest_message,
+            latest_message_at=self.latest_message_at,
+            # 关键：这里会把 ["{...}", "{...}"] 变成 [{}, {}]
+            events=parse_json_list(self.events),
+            files=parse_json_list(self.files),
+            memories=parse_json_dict(self.memories),
+            status=SessionStatus(self.status),
+            updated_at=self.updated_at,
+            created_at=self.created_at,
+        )
 
     def update_from_domain(self, session: Session) -> None:
         """从传递的领域模型更新ORM数据"""

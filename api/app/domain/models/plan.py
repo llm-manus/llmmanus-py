@@ -52,7 +52,6 @@ class Plan(BaseModel):
         """只读属性，用于判断计划是否已经结束"""
         return self.status in [ExecutionStatus.COMPLETED, ExecutionStatus.FAILED]
 
-    @property
     def get_next_step(self) -> Optional[Step]:
         """获取需要执行的下一个步骤"""
         return next((step for step in self.steps if not step.done), None)
