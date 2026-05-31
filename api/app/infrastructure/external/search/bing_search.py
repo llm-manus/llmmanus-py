@@ -217,7 +217,7 @@ if __name__ == "__main__":
 
     async def test():
         search_engine = BingSearchEngine()
-        result = await search_engine.invoke("gemini", "all")
+        result = await search_engine.invoke("尚界z7t", "all")
 
         print(result, '\n\n')
         for item in result.data.results:

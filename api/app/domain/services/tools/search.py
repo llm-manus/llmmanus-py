@@ -15,6 +15,7 @@ from app.domain.services.tools.base import BaseTool, tool
 
 class SearchTool(BaseTool):
     """搜索工具包，提供与搜索引擎交互的能力"""
+    name: str = "search"
 
     def __init__(self, search_engine: SearchEngine) -> None:
         """构造函数，完成搜索工具的初始化"""

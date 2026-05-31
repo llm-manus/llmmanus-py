@@ -13,7 +13,7 @@ from app.domain.models.tool_result import ToolResult
 """
 LlmManus工具工具设计思路
 1.所有工具都必须集成一个BaseTool基类，拥有统一的invoke方法用于调用该类下的对应工具；
-2.定义一个装饰器，被该装饰器装饰的方法会填充_tool_name、_tool_description、_tool_scheme属性;
+2.定义一个装饰器，被该装饰器装饰的方法会填充_tool_name、_tool_description、_tool_schema属性;
 3.工具类可以提供get_tools快速获取基于缓存的scheme参数信息，折腰LLM就可以便捷调用;
 4.LLM生成的内容有可能会有幻觉，在调用工具前需要筛选出LLM生成参数中符合工具的相关数据
 """
@@ -47,7 +47,7 @@ def tool(
         # 2.将对应属性绑定到fun上
         func._tool_name = name
         func._tool_description = description
-        func._tool_scheme = tool_schema
+        func._tool_schema = tool_schema
 
         return func
 

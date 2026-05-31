@@ -8,7 +8,6 @@
 from typing import Optional, Union, List
 
 from .base import BaseTool, tool
-from ...models.message import Message
 from ...models.tool_result import ToolResult
 
 

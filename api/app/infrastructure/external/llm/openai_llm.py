@@ -12,7 +12,9 @@ from openai import AsyncOpenAI
 
 from app.application.errors.exception import ServerRequestsError
 from app.domain.external.llm import LLM
+from app.domain.external.search import SearchEngine
 from app.domain.models.app_config import LLMConfig
+from app.domain.services.tools.search import SearchTool
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +69,7 @@ class OpenAILLM(LLM):
                     response_format=response_format,
                     tools=tools,
                     tool_choice=tool_choice,
-                    parallel_tool_calls=False,  # 关闭并行工具调用(deepseek没用这个参数的)
+                    parallel_tool_calls=False,  # 关闭并行工具调用(deepseek没有这个参数的)
                     timeout=self._timeout,
                 )
             else:
@@ -96,11 +98,14 @@ if __name__ == '__main__':
 
     async def main():
         llm = OpenAILLM(LLMConfig(
-            base_url="https://api.deepseek.com",
-            api_key="",
-            model_name="deepseek-chat",
+            base_url="https://api.longcat.chat/openai/v1",
+            api_key="ak_2iI6QI5RJ5Ms80k1KY1zB0qZ89h2J",
+            model_name="OWL",
         ))
-        response = await llm.invoke([{"role": "user", "content": "Hi"}])
+        response = await llm.invoke(
+            messages=[{"role": "user", "content": "帮我查询上海今天天气"}],
+            tools=[SearchTool.search_web._tool_schema]  # 直接用类获取！
+        )
         print(response)
 
 
