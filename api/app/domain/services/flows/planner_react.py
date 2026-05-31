@@ -95,7 +95,7 @@ class PlannerReActFlow(BaseFlow):
         async with self._uow:
             session = await self._uow.session.get_by_id(self._session_id)
         if not session:
-            raise ValueError(f"会话[{self._session_id}]不存子啊，请核实后尝试")
+            raise ValueError(f"会话[{self._session_id}]不存在，请核实后尝试")
 
         # 2.判断会话的状态是不是空闲
         #   如果不是则有可能有两种状态

@@ -189,7 +189,8 @@ class ToolSSEEvent(BaseSSEEvent):
                 status=event.status,
                 function=event.function_name,
                 args=event.function_args,
-                content=event.tool_content,
+                # todo：不确定是不是要这样，但看着这样就可以展示了
+                content=event.function_result.data if event.function_result else None,
             )
         )
 

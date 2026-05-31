@@ -66,7 +66,8 @@ class OpenAILLM(LLM):
                     temperature=self._temperature,
                     max_tokens=self._max_tokens,
                     messages=messages,
-                    response_format=response_format,
+                    # todo: 要看下
+                    # response_format=response_format,
                     tools=tools,
                     tool_choice=tool_choice,
                     parallel_tool_calls=False,  # 关闭并行工具调用(deepseek没有这个参数的)
