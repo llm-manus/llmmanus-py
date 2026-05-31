@@ -70,24 +70,25 @@ class AgentService:
     async def _create_task(self, session: Session) -> Task:
         """根据传递的会话创建一个新任务"""
         # 1.获取沙箱实例
+        # todo:沙箱部署
         sandbox = None
-        sandbox_id = session.sandbox_id
-        if sandbox_id:
-            sandbox = await self._sandbox_cls.get(sandbox_id)
-
-        # 2.判断是否能获取到沙箱(如果没有则创建)
-        if not sandbox:
-            # 3.沙箱不存在则创建一个新的(有可能被释放了)
-            sandbox = await self._sandbox_cls.create()
-            session.sandbox_id = sandbox.id
-            async with self._uow:
-                await self._uow.session.save(session)
-
-        # 4.从沙箱中获取浏览器实例
-        browser = await sandbox.get_browser()
-        if not browser:
-            logger.error(f"获取沙箱[{sandbox.id}]中的浏览器实例失败")
-            raise RuntimeError(f"获取沙箱[{sandbox.id}]中的浏览器实例失败")
+        # sandbox_id = session.sandbox_id
+        # if sandbox_id:
+        #     sandbox = await self._sandbox_cls.get(sandbox_id)
+        #
+        # # 2.判断是否能获取到沙箱(如果没有则创建)
+        # if not sandbox:
+        #     # 3.沙箱不存在则创建一个新的(有可能被释放了)
+        #     sandbox = await self._sandbox_cls.create()
+        #     session.sandbox_id = sandbox.id
+        #     async with self._uow:
+        #         await self._uow.session.save(session)
+        #
+        # # 4.从沙箱中获取浏览器实例
+        # browser = await sandbox.get_browser()
+        # if not browser:
+        #     logger.error(f"获取沙箱[{sandbox.id}]中的浏览器实例失败")
+        #     raise RuntimeError(f"获取沙箱[{sandbox.id}]中的浏览器实例失败")
 
         # 5.创建AgentTaskRunner
         task_runner = AgentTaskRunner(
@@ -99,9 +100,9 @@ class AgentService:
             session_id=session.id,
             file_storage=self._file_storage,
             json_parser=self._json_parser,
-            browser=browser,
+            browser=None,
             search_engine=self._search_engine,
-            sandbox=sandbox,
+            sandbox=None,
         )
 
         # 6.创建任务Task并更新会话中的信息
@@ -164,7 +165,7 @@ class AgentService:
                         timestamp=timestamp or datetime.now(),
                     )
 
-                # bugfix:从文件数据库中查询数据并更新attachments实际内容, 并返回人类消息事件
+                # 从文件数据库中查询数据并更新attachments实际内容, 并返回人类消息事件
                 async with self._uow:
                     db_attachments = [await self._uow.file.get_by_id(id) for id in attachments]
 
@@ -173,7 +174,6 @@ class AgentService:
                     role="user",
                     message=message,
                     attachments=[attachment for attachment in db_attachments if attachment is not None],
-                    # attachments=[File(id=attachment) for attachment in attachments] if attachments else [],
                 )
 
                 # 8.将事件添加到任务的输入流中，好让Agent获取到数据
@@ -202,7 +202,7 @@ class AgentService:
 
                 # 13.使用Pydantic提供的类型适配器将event_str转换为指定类实例
                 event = TypeAdapter(Event).validate_json(event_str)
-                event.id = event_id
+                event.event_id = event_id
                 logger.debug(f"从会话[{session_id}]中获取事件: {type(event).__name__}")
 
                 # 14.将未读消息数重置为0

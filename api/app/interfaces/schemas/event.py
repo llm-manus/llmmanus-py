@@ -18,12 +18,12 @@ from app.domain.models.plan import ExecutionStatus
 
 class BaseEventData(BaseModel):
     """基础事件数据"""
-    id: Optional[str] = None # 事件id
-    created_at: datetime = Field(default_factory=datetime.now) # 事件时间
+    event_id: Optional[str] = None  # 事件id
+    created_at: datetime = Field(default_factory=datetime.now)  # 事件时间
 
     # pydantic v2写法，序列化时将datetime转换为时间戳
     model_config = ConfigDict(json_encoders={
-        datetime: lambda v: int(v.timestamp()),
+        datetime: lambda v: int(v.timestamp())
     })
 
     @classmethod
@@ -39,8 +39,9 @@ class BaseEventData(BaseModel):
         """从事件Domain模型中构建基础事件数据"""
         return cls(
             **cls.base_event_data(event),
-            **event.model_dump(mode="json", exclude={"id", "type", "created_at"})
+            **event.model_dump(mode="json", exclude={"id", "type", "created_at"}),
         )
+
 
 class BaseSSEEvent(BaseModel):
     """基础流式事件数据类型"""
@@ -59,6 +60,7 @@ class BaseSSEEvent(BaseModel):
             data=data_class.from_event(event),
         )
 
+
 class CommonEventData(BaseEventData):
     """通用事件数据，让结构允许填充额外的数据"""
     model_config = ConfigDict(
@@ -68,10 +70,12 @@ class CommonEventData(BaseEventData):
         extra="allow",
     )
 
+
 class CommonSSEEvent(BaseSSEEvent):
     """通用事件"""
     event: str
     data: CommonEventData
+
 
 class MessageEventData(BaseEventData):
     """消息事件数据"""
@@ -96,6 +100,7 @@ class MessageSSEEvent(BaseSSEEvent):
             )
         )
 
+
 class TitleEventData(BaseEventData):
     """标题事件数据"""
     title: str
@@ -109,9 +114,9 @@ class TitleSSEEvent(BaseSSEEvent):
 
 class StepEventData(BaseEventData):
     """步骤事件数据"""
-    id: str # 步骤id
-    status: ExecutionStatus # 步骤执行状态
-    description: str # 步骤描述
+    id: str  # 步骤id
+    status: ExecutionStatus  # 步骤执行状态
+    description: str  # 步骤描述
 
 
 class StepSSEEvent(BaseSSEEvent):
@@ -129,6 +134,7 @@ class StepSSEEvent(BaseSSEEvent):
                 description=event.step.description
             )
         )
+
 
 class PlanEventData(BaseEventData):
     """计划事件数据"""
@@ -187,17 +193,18 @@ class ToolSSEEvent(BaseSSEEvent):
             )
         )
 
+
 class DoneSSEEvent(BaseSSEEvent):
-    """停止流式输入流式事件"""
+    """停止流式事件"""
     event: Literal["done"] = "done"
 
 
 class WaitSSEEvent(BaseSSEEvent):
-    """等待人类流式输入流式事件"""
+    """等待人类输入流式事件"""
     event: Literal["wait"] = "wait"
 
 
-class ErrorEventData(BaseSSEEvent):
+class ErrorEventData(BaseEventData):
     """错误事件数据"""
     error: str
 
@@ -221,11 +228,6 @@ AgentSSEEvent = Union[
     WaitSSEEvent,
 ]
 
-class EventMapping:
-    """事件映射数据类，用于存储事件映射信息，涵盖流式事件类型、数据类、事件类型字符串"""
-    sse_event_class: Type[BaseSSEEvent]
-    data_class: Type[BaseSSEEvent]
-    event_type: str
 
 @dataclass
 class EventMapping:
@@ -233,6 +235,7 @@ class EventMapping:
     sse_event_class: Type[BaseSSEEvent]
     data_class: Type[BaseEventData]
     event_type: str
+
 
 class EventMapper:
     """事件映射类，利用Python自身提供的自省机制，将业务逻辑中的Event转换成适合流式传输的AgentSSEEvent"""

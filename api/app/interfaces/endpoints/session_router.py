@@ -168,7 +168,7 @@ async def chat(
             sse_event = EventMapper.event_to_sse_event(event)
             if sse_event:
                 yield ServerSentEvent(
-                    event=sse_event.type,
+                    event=sse_event.event,
                     data=sse_event.data.model_dump_json()
                 )
 

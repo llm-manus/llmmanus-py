@@ -173,7 +173,7 @@ class PlannerReActFlow(BaseFlow):
                     continue
 
                 # 20.调用执行Agent执行对应的步骤
-                logger.info(f"Planner&ReAct流开始执行步骤 {step.id}: {step.description[:50]}...")
+                logger.info(f"Planner&ReAct流开始执行步骤 {step.event_id}: {step.description[:50]}...")
                 async for event in self.react.execute_step(self.plan, step, message):
                     yield event
 

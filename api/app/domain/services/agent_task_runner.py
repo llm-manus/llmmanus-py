@@ -67,6 +67,7 @@ class AgentTaskRunner(TaskRunner):
         self._file_storage = file_storage
         self._browser = browser
         self._flow = PlannerReActFlow(
+            uow_factory=self._uow_factory,
             llm=llm,
             agent_config=agent_config,
             session_id=session_id,
@@ -82,7 +83,7 @@ class AgentTaskRunner(TaskRunner):
         """往制定任务的消息队列中添加事件"""
         # 1.往任务的输出消息队列中新增事件
         event_id = await task.output_stream.put(event.model_dump_json())
-        event.id = event_id
+        event.event_id = event_id
 
         # 2.将事件添加到对应的会话中
         async with self._uow:
@@ -99,7 +100,7 @@ class AgentTaskRunner(TaskRunner):
 
         # 2.使用pydantic+type类型将字符串转换成事件
         event = TypeAdapter(Event).validate_json(event_str)
-        event.id = event_id
+        event.event_id = event_id
 
         return event
 

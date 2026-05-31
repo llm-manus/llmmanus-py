@@ -29,7 +29,7 @@ class StepEventStatus(str, Enum):
     """步骤事件状态"""
     STARTED = "started"  # 已开始
     COMPLETED = "completed"  # 已完成
-    FAILED = "failed"  # 已失败
+    FAILED = "failed"  # 失败
 
 
 class ToolEventStatus(str, Enum):
@@ -62,11 +62,11 @@ class StepEvent(BaseEvent):
     """子任务/步骤事件"""
     type: Literal["step"] = "step"
     step: Step  # 步骤信息
-    status: StepEventStatus = StepEventStatus.STARTED  # 步骤状态
+    status: StepEventStatus = StepEventStatus.STARTED
 
 
 class MessageEvent(BaseEvent):
-    """消息类型，包含人类消息和AI消息"""
+    """消息事件，包含人类消息和AI消息"""
     type: Literal["message"] = "message"
     role: Literal["user", "assistant"] = "assistant"  # 消息角色
     message: str = ""  # 消息本身
@@ -77,25 +77,31 @@ class BrowserToolContent(BaseModel):
     """浏览器工具扩展内容"""
     screenshot: str  # 浏览器快照截图
 
+
 class SearchToolContent(BaseModel):
     """搜索工具内容"""
-    results: List[SearchResultItem] # 搜索结果列表
+    results: List[SearchResultItem]  # 搜索结果列表
+
 
 class ShellToolContent(BaseModel):
     """Shell工具内容"""
-    console: Any # 控制台内容
+    console: Any  # 控制台内容
+
 
 class FileToolContent(BaseModel):
     """文件工具内容"""
-    content: str # 文件内容
+    content: str  # 文件内容
+
 
 class MCPToolContent(BaseModel):
     """MCP工具内容"""
-    result: Any # MCP工具结果
+    result: Any  # MCP工具结果
+
 
 class A2AToolContent(BaseModel):
     """A2A智能体工具内容"""
-    a2a_result: Any # A2A智能体调用结果
+    a2a_result: Any  # A2A智能体调用结果
+
 
 ToolContent = Union[
     BrowserToolContent,
@@ -135,7 +141,7 @@ class DoneEvent(BaseEvent):
     type: Literal["done"] = "done"
 
 
-# 定义应用事件类型申明
+# 定义应用事件类型声明
 Event = Annotated[
     Union[
         PlanEvent,
@@ -147,6 +153,6 @@ Event = Annotated[
         ErrorEvent,
         DoneEvent,
     ],
-    Field(discriminator="type")
+    Field(discriminator="type"),
 ]
 
