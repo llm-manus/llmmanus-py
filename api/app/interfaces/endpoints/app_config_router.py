@@ -105,7 +105,7 @@ async def get_mcp_servers(
 @router.post(
     path="/mcp-servers",
     response_model=Response[Optional[Dict]],
-    summary="新增MCP服务器配置，支持传递一个或者多个配置",
+    summary="新增MCP服务配置，支持传递一个或者多个配置",
     description="传递MCP配置信息为系统新增MCP工具",
 )
 async def create_mcp_servers(
@@ -135,17 +135,17 @@ async def delete_mcp_server(
 @router.post(
     path="/mcp-servers/{server_name}/enabled",
     response_model=Response[Optional[Dict]],
-    summary="更新MCP服务的启动状态",
-    description="根据传递的server_name+enabled更新指定MCP服务的启动状态"
+    summary="更新MCP服务的启用状态",
+    description="根据传递的server_name+enabled更新指定MCP服务的启用状态",
 )
 async def set_mcp_server_enabled(
         server_name: str,
-        enabled: bool = Body(..., empty=True),
+        enabled: bool = Body(..., embed=True),
         app_config_service: AppConfigService = Depends(get_app_config_service),
 ) -> Response[Optional[Dict]]:
-    """根据传递的server_name+enabled更新服务的启动状态"""
-    await app_config_service.set_mcp_Server_enabled(server_name, enabled)
-    return Response.success(msg="更新MCP服务启动状态成功")
+    """根据传递的server_name+enabled更新服务的启用状态"""
+    await app_config_service.set_mcp_server_enabled(server_name, enabled)
+    return Response.success(msg="更新MCP服务启用状态成功")
 
 @router.get(
     path="/a2a-servers",

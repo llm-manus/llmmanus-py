@@ -36,8 +36,8 @@ class MCPTransport(str, Enum):
 
 
 class MCPServerConfig(BaseModel):
-    """MCP单条服务器配置"""
-    # 通用字段配置
+    """MCP服务配置"""
+    # 通用配置字段
     transport: MCPTransport = MCPTransport.STREAMABLE_HTTP  # 传输协议
     enabled: bool = True  # 是否开启，默认为True
     description: Optional[str] = None  # 服务器描述
@@ -54,7 +54,7 @@ class MCPServerConfig(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     @model_validator(mode="after")
-    def validate_cmp_server_config(self):
+    def validate_mcp_server_config(self):
         """校验mcp_server_config的相关信息，包含url+command"""
         # 1.判断transport是否为sse/streamable_http
         if self.transport in [MCPTransport.SSE, MCPTransport.STREAMABLE_HTTP]:
@@ -72,7 +72,7 @@ class MCPServerConfig(BaseModel):
 
 class MCPConfig(BaseModel):
     """应用MCP配置"""
-    mcpServers: Dict[str, MCPServerConfig] = Field(default_factory=dict)  # mcp服务
+    mcpServers: Dict[str, MCPServerConfig] = Field(default_factory=dict)
 
     model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
 

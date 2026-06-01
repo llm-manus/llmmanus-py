@@ -119,7 +119,7 @@ class AppConfigService:
         self.app_config_repository.save(app_config)
         return app_config.mcp_config
 
-    async def set_mcp_Server_enabled(self, server_name: str, enabled: bool) -> MCPConfig:
+    async def set_mcp_server_enabled(self, server_name: str, enabled: bool) -> MCPConfig:
         """更新MCP服务的启动状态"""
         # 1.获取应用配置
         app_config = await self._load_app_config()
